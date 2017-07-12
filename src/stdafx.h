@@ -1,0 +1,34 @@
+#pragma once
+
+#include <cstdio>
+#include <cassert>
+#include <cstring>
+#include <cmath>
+
+#include <limits>
+#include <iomanip>
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <unordered_map>
+#include <unordered_set>
+
+#include <mutex>
+#include <future>
+#include <thread>
+
+#include <os/osutils.h>
+#include <io/ioutils.h>
+#include <adv/randutils.h>
+#include <graph/graph.h>
+#include <math/mathutils.h>
+
+// #include <snap/Snap.h>
+
+using std::vector;
+using std::string;
+using std::unordered_map;
+using std::unordered_set;
+
+using namespace graph;
+using namespace fmt::literals;

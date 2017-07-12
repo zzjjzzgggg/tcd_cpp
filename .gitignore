@@ -1,0 +1,6 @@
+__pycache__/
+build/
+data.txt
+.ycm_extra_conf.py
+*.bak
+*.dat
