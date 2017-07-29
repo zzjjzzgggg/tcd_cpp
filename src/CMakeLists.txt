@@ -1,50 +1,74 @@
-# estimate
-add_library(em_is em_alg.cpp)
-target_link_libraries(em_is ${LIBRARIES})
-target_compile_definitions(em_is PUBLIC METHOD_IS=1)
-
-add_library(em_us em_alg.cpp)
-target_link_libraries(em_us ${LIBRARIES})
-target_compile_definitions(em_us PUBLIC METHOD_US=1)
-
-add_library(em_fs em_alg.cpp)
-target_link_libraries(em_fs ${LIBRARIES})
-target_compile_definitions(em_fs PUBLIC METHOD_FS=1)
-
-add_library(sampler graph_sampler.cpp)
-target_link_libraries(sampler ${LIBRARIES})
-
-add_executable(groundtruth main_groundtruth.cpp)
-target_link_libraries(groundtruth sampler)
-
-add_executable(estimate_is main_estimate.cpp)
-target_link_libraries(estimate_is sampler em_is)
-
-add_executable(estimate_us main_estimate.cpp)
-target_link_libraries(estimate_us sampler em_us)
-
-add_executable(estimate_fs main_estimate.cpp)
-target_link_libraries(estimate_fs sampler em_fs)
-
-# crlb
-add_library(crlb crlb.cpp)
-target_link_libraries(crlb ${LIBRARIES})
-
-add_executable(calcrlb_is main_crlb.cpp)
-target_link_libraries(calcrlb_is crlb)
-target_compile_definitions(calcrlb_is PRIVATE METHOD_IS=1)
-
-add_executable(calcrlb_us main_crlb.cpp)
-target_link_libraries(calcrlb_us crlb)
-target_compile_definitions(calcrlb_us PRIVATE METHOD_US=1)
-
-add_executable(calcrlb_fs main_crlb.cpp)
-target_link_libraries(calcrlb_fs crlb)
-target_compile_definitions(calcrlb_fs PRIVATE METHOD_FS=1)
-
 # truncate graph
 add_executable(truncate_graph main_truncate_graph.cpp)
 target_link_libraries(truncate_graph ${LIBRARIES})
+
+# groundtruth
+add_executable(groundtruth main_groundtruth.cpp)
+target_link_libraries(groundtruth ${LIBRARIES})
+
+# estimate
+add_library(em em_alg.cpp)
+target_link_libraries(em ${LIBRARIES})
+
+add_library(em_un em_alg.cpp)
+target_link_libraries(em_un ${LIBRARIES})
+target_compile_definitions(em_un  PUBLIC N_UN=1)
+
+##################################################################################
+# n known
+## ITS
+add_executable(estimate_its main_estimate.cpp)
+target_link_libraries(estimate_its em)
+target_compile_definitions(estimate_its PRIVATE S_ITS=1)
+
+## ITS-color
+add_executable(estimate_itsc main_estimate.cpp)
+target_link_libraries(estimate_itsc em)
+target_compile_definitions(estimate_itsc PRIVATE S_ITSC=1)
+
+## SGS
+add_executable(estimate_sgs main_estimate.cpp)
+target_link_libraries(estimate_sgs em)
+target_compile_definitions(estimate_sgs PRIVATE S_SGS=1)
+
+
+##################################################################################
+# n unknown
+## ITS
+add_executable(estimate_un_its main_estimate.cpp)
+target_link_libraries(estimate_un_its em_un)
+target_compile_definitions(estimate_un_its PRIVATE S_ITS=1)
+
+## ITS-color
+add_executable(estimate_un_itsc main_estimate.cpp)
+target_link_libraries(estimate_un_itsc em_un)
+target_compile_definitions(estimate_un_itsc PRIVATE S_ITSC=1)
+
+## SGS
+add_executable(estimate_un_sgs main_estimate.cpp)
+target_link_libraries(estimate_un_sgs em_un)
+target_compile_definitions(estimate_un_sgs PRIVATE S_SGS=1)
+
+
+## SH
+# add_executable(estimate_sh main_estimate.cpp)
+# target_link_libraries(estimate_sh em)
+# target_compile_definitions(estimate_sh PRIVATE S_SH=1)
+
+## SH Flow
+# add_executable(estimate_sh_flow main_estimate.cpp)
+# target_link_libraries(estimate_sh_flow em)
+# target_compile_definitions(estimate_sh_flow PRIVATE S_SH_FLOW=1)
+
+# crlb
+add_executable(calcrlb_its main_crlb.cpp)
+target_link_libraries(calcrlb_its ${LIBRARIES})
+target_compile_definitions(calcrlb_its PRIVATE S_ITS=1)
+
+add_executable(calcrlb_sgs main_crlb.cpp)
+target_link_libraries(calcrlb_sgs ${LIBRARIES})
+target_compile_definitions(calcrlb_sgs PRIVATE S_SGS=1)
+
 
 # test
 add_executable(test-me main_test.cpp)

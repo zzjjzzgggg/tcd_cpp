@@ -15,6 +15,7 @@ public:
         double p_edge;     // edge sampling rate
         double p_node;     // node sampling rate
         string graph_fnm;  // multigraph file name
+        string others;     // reserved string
 
         void echo() const {
             printf(
@@ -22,60 +23,108 @@ public:
                 "  graph: %s\n"
                 "  maximum TC: %d\n"
                 "  edge sample rate: %g\n"
-                "  node sample rate (US): %g\n\n",
+                "  node sample rate: %g\n\n",
                 graph_fnm.c_str(), mx_tc, p_edge, p_node);
         }
     };
 
-private:
+protected:
     const Config* conf_;
-    DGraph G_;
+    double p_tri_;  // prob. of sampling a triangle
+    vector<int> nodes_;
+    vector<std::pair<int, int>> edges_;
 
-private:
+protected:
     // state triads histogram in a sampled graph G
-    vector<std::pair<int, int>> statTrids(const DGraph& G) const;
+    template <class Container = vector<int>>
+    vector<std::pair<int, int>> statTrids(
+        const UGraph& G, const Container& nodes = Container()) const {
+        std::unordered_map<int, int> tc_to_num_nodes;
 
-    // count the number of triads of a node in a probabilistic manner
-    int countTriadsWithProb(const int node, const DGraph& G,
-                            const unordered_set<int>& marked_nds) const;
+        int addition_zero_tc_nodes;
+        if (nodes.empty()) {
+            for (auto&& ni = G.beginNI(); ni != G.endNI(); ni++)
+                tc_to_num_nodes[countNodeDirTriads(ni->first, G)]++;
+            addition_zero_tc_nodes = nodes_.size() - G.getNodes();
+        } else {
+            for (auto node : nodes)
+                tc_to_num_nodes[countNodeDirTriads(node, G)]++;
+            addition_zero_tc_nodes = nodes_.size() - nodes.size();
+        }
+        tc_to_num_nodes[0] += addition_zero_tc_nodes;
+#ifdef N_UN
+        tc_to_num_nodes.erase(0);
+#endif
+        std::vector<std::pair<int, int>> triads_hist;
+        for (auto&& it : tc_to_num_nodes)
+            triads_hist.emplace_back(it.first, it.second);
+        std::sort(triads_hist.begin(), triads_hist.end());
+        return triads_hist;
+    }
+
+    /**
+     * Beta-Binomial distribution
+     */
+    inline double bb(const int j, const int i, const double alpha) const {
+        return SpecFun::BetaBinomial(j, i, p_tri_ / alpha,
+                                     (1 - p_tri_) / alpha);
+    }
 
 public:
     Sampler(const Config* conf) : conf_(conf) {
-        G_ = loadEdgeList<DGraph>(conf_->graph_fnm, GraphType::MULTI);
-        printf("N: %d, E: %d\n", G_.getNodes(), G_.getEdges());
+        if (!conf_->graph_fnm.empty()) {
+            printf("loading edges ...\n");
+            ioutils::loadPrVec(conf_->graph_fnm, edges_);
+            randutils::default_rng rng;
+            // rng.shuffle(edges_);
+            unordered_set<int> nodes;
+            for (auto&& pr : edges_) {
+                nodes.insert(pr.first);
+                nodes.insert(pr.second);
+            }
+            nodes_.reserve(nodes.size());
+            for (auto nd : nodes) nodes_.push_back(nd);
+            printf("N: %lu, E: %lu\n", nodes_.size(), edges_.size());
+        }
+        // default triangle sampling probability
+        p_tri_ = std::pow(conf_->p_edge, 3);
     }
 
-    void getGroundtruth(const string& outfnm) const;
+    /**
+     * P(Y=j|X=i, .)
+     */
+    double pji(const int j, const int i, const double alpha) const {
+#ifndef N_UN
+        return bji(j, i, alpha);
+#else
+        return bji(j, i, alpha) / (1 - bji(0, i, alpha));
+#endif
+    }
+
+    virtual void info() const = 0;
+
+    virtual vector<std::pair<int, int>> sample() const = 0;
 
     /**
-     * Identical Triangle Sampling by Edge Sampling. Each edge is idependently
-     * sampled with probability p, and hence a triangle is sampled with
-     * probability p^3.
+     * P(Y=j|X=i)
      */
-    vector<std::pair<int, int>> IS() const;
+    virtual double bji(const int j, const int i, const double alpha) const = 0;
+
+    virtual bool hasAlpha() const { return true; }
 
     /**
-     * deprecated.
-     * This method has the distadvantage of both IS and FS.
+     * first and second order derivations of log b_{ji}(alpha) to alpha
      */
-    vector<std::pair<int, int>> US() const;
+    virtual std::pair<double, double> getLGrad(const int i, const int j,
+                                               const double alpha) const = 0;
 
-    /**
-     * Similar to Flow Sampling. Randomly sample a collection of nodes. Keep
-     * each triangle related to a sampled node.
-     */
-    vector<std::pair<int, int>> FS() const;
-
-    /**
-     * Triangle Sample-and-Hold.
-     * If a new triangle is formed, we randomly pick a node from this triangle,
-     * and mark this node. For a marked node, its related triangles are all kept
-     * since it is marked.
-     * The above process is only invoked for a newly formed triangle, which must
-     * consists of three unmarked nodes. Otherwise, if a node has already been
-     * marked, then this triangle is already kept.
-     */
-    vector<std::pair<int, int>> SH() const;
+    void check() const {
+        for (int i = 0; i <= conf_->mx_tc; i++) {
+            double sum_col = 0;
+            for (int j = 0; j <= i; j++) sum_col += bji(j, i, 0.1);
+            assert(std::abs(sum_col - 1) < 1e-9);
+        }
+    }
 };
 
 #endif /* __GRAPH_SAMPLER_H__ */

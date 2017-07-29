@@ -5,21 +5,7 @@
 
 #include "stdafx.h"
 
-#include <Eigen/Dense>
-using namespace Eigen;
-
-int main(int argc, char *argv[]) {
-    double p = 0.1, sum = 0, alpha = 0.3;
-    int i = 20;
-    auto BB = [&](int j, int i) {
-        return SpecFun::BetaBinomial(j, i, p / alpha, (1 - p) / alpha);
-    };
-
-    sum = 0;
-    for (int j = 0; j < i; j++) {
-        sum += BB(1, 1) * BB(0, j);
-    }
-    sum += BB(0, i);
-    printf("\nalpha = %.3f, sum= %.3f\n", alpha, sum);
+int main(int argc, char* argv[]) {
+    printf("Built: %s %s\n", __DATE__, __TIME__);
     return 0;
 }

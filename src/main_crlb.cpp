@@ -4,15 +4,17 @@
  */
 
 #include "stdafx.h"
+
 #include "crlb.h"
+#include "crlb_sgs.h"
+
 #include <gflags/gflags.h>
 
 DEFINE_int32(n, 27400, "number of nodes");
 DEFINE_int32(mx_tc, 100, "maximum triadic cardinality");
+DEFINE_bool(un, false, "known graph size?");
 DEFINE_double(p_tri, 0.001, "triangle sampling rate");
-#ifdef METHOD_US
 DEFINE_double(p_nd, 0.001, "node sampling rate");
-#endif
 DEFINE_double(alpha, 0.001, "alpha");
 DEFINE_string(theta, "", "theta file name");
 DEFINE_string(output, "", "output file name");
@@ -23,22 +25,27 @@ int main(int argc, char *argv[]) {
     osutils::Timer tm;
 
     CRLB::Config conf;
-    conf.W = FLAGS_mx_tc;
     conf.n = FLAGS_n;
+    conf.W = FLAGS_mx_tc;
+    conf.known_size = !FLAGS_un;
     conf.alpha = FLAGS_alpha;
     conf.p_tri = FLAGS_p_tri;
-#ifdef METHOD_US
     conf.p_nd = FLAGS_p_nd;
-#endif
     conf.theta_fnm = FLAGS_theta;
     conf.echo();
 
+#ifdef S_ITS
     CRLB crlb(&conf);
-#ifdef METHOD_IS
-    crlb.calCRLB(crlb.getISB());
-#elif METHOD_US
-    crlb.calCRLB(crlb.getUSB());
+#elif S_SGS
+    CRLB_SGS crlb(&conf);
+#else
+    printf("Sampling method not specified\n");
+    CRLB crlb(&conf);
+    return -1;
 #endif
+
+    crlb.init();
+    crlb.calCRLB();
     crlb.save(FLAGS_output);
 
     printf("cost time %s\n", tm.getStr().c_str());

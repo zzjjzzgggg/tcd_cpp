@@ -7,6 +7,7 @@
 #include <gflags/gflags.h>
 
 DEFINE_int32(mx_tc, 100, "maximum triadic cardinality");
+DEFINE_bool(shuffle, false, "shuffle edges?");
 DEFINE_string(graph, "", "theta file name");
 
 void truncateByNode() {
@@ -48,11 +49,16 @@ unordered_map<int, int> countNewTriadsIfAddEdge(const int u, const int v,
 }
 
 void truncateByEdge() {
+    auto edges = ioutils::loadPrVec<int, int>(FLAGS_graph);
+    if (FLAGS_shuffle) {
+        randutils::default_rng rng;
+        rng.shuffle(edges);
+    }
+
     DGraph G(GraphType::MULTI);
     unordered_map<int, int> nd_triads;
-    ioutils::TSVParser ss(FLAGS_graph);
-    while (ss.next()) {
-        int u = ss.get<int>(0), v = ss.get<int>(1);
+    for (auto&& edge : edges) {
+        int u = edge.first, v = edge.second;
         if (!G.isNode(u) || !G.isNode(v)) {
             G.addEdge(u, v);
             continue;

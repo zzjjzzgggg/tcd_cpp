@@ -4,7 +4,11 @@
  */
 
 #include "stdafx.h"
-#include "graph_sampler.h"
+
+#include "ITS_sampler.h"
+#include "ITSC_sampler.h"
+#include "SGS_sampler.h"
+
 #include "em_alg.h"
 
 #include <gflags/gflags.h>
@@ -12,24 +16,26 @@
 DEFINE_string(graph, "", "graph file name");
 DEFINE_string(theta, "", "theta groundtruth");
 DEFINE_string(output, "", "output file name");
+DEFINE_string(others, "", "reserved string");
 
 DEFINE_int32(mx_tc, 2000, "maximum triadic cardinality");
+DEFINE_int32(mx_i, 200, "maximum triadic cardinality");
 DEFINE_int32(mx_iter_theta, 500, "maximum iterations for estimating theta");
 DEFINE_int32(mx_iter_alpha, 200, "maximum iterations for estimating alpha");
 DEFINE_int32(trials, 10, "trials per core");
-DEFINE_int32(cores, std::thread::hardware_concurrency(), "FLAGS_cores");
+DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 
 DEFINE_double(p_node, 0.1, "node sampling rate");
 DEFINE_double(p_edge, 0.1, "edge sampling rate");
 DEFINE_double(eps_theta, 0.001, "threshold of estimating theta");
-DEFINE_double(eps_alpha, 0.0001, "threshold of estimating alpha");
+DEFINE_double(eps_alpha, 0.001, "threshold of estimating alpha");
 
 std::mutex print_mutex;
 void echo(const int n_suc, vector<int>& states) {
     std::lock_guard<std::mutex> guard(print_mutex);
     for (int core = 0; core < FLAGS_cores; core++)
         printf("  [%d] %2d", core, states[core]);
-    printf("  succeed: %3d\r", n_suc);
+    printf("  suc: %3d\r", n_suc);
     std::fflush(stdout);
 }
 
@@ -44,49 +50,51 @@ int main(int argc, char* argv[]) {
     confs.mx_tc = FLAGS_mx_tc;
     confs.p_edge = FLAGS_p_edge;
     confs.p_node = FLAGS_p_node;
+    confs.others = FLAGS_others;
     confs.echo();
-    Sampler sampler(&confs);
+
+#ifdef S_ITS
+    ITSSampler sampler(&confs);
+#elif S_ITSC
+    ITSCSampler sampler(&confs);
+#elif S_SGS
+    SGSSampler sampler(&confs);
+#else
+    printf("Warning: Sampler is not specified! Use ISSampler by default!\n");
+    ITSSampler sampler(&confs);
+#endif
+
+    // sampler.check();
+    sampler.info();
 
     EM::Config conf;
     conf.mx_tc = FLAGS_mx_tc;
+    conf.mx_i = FLAGS_mx_i;
     conf.mx_iter_theta = FLAGS_mx_iter_theta;
     conf.mx_iter_alpha = FLAGS_mx_iter_alpha;
     conf.eps_theta = FLAGS_eps_theta;
     conf.eps_alpha = FLAGS_eps_alpha;
-    conf.p_node = FLAGS_p_node;
-#ifdef METHOD_IS
-    conf.p_tri = std::pow(FLAGS_p_edge, 3);
-#elif METHOD_US
-    conf.p_tri = FLAGS_p_edge;
-#endif
     conf.echo();
 
-    printf("trials per processor: %d\n", FLAGS_trials);
+    printf("trials per processor: %d\n\n", FLAGS_trials);
 
     auto truth = ioutils::loadPrVec<int, double>(FLAGS_theta);
 
-    int n_success = 0;
+    int n_suc = 0;
     double alpha = 0;
 
     vector<double> theta_hat(truth.size(), 0), err(truth.size(), 0);
     vector<int> states(FLAGS_cores, 0);
 
     // define the task
-    auto task = [&](int core) {
-        EM em{&conf};
+    auto fun_task = [&](int core) {
+        EM em{&conf, &sampler};
         for (int trial = 0; trial < FLAGS_trials; trial++) {
-            states[core]++;
-#ifdef METHOD_IS
-            em.init(sampler.IS());
-#elif METHOD_US
-            em.init(sampler.US());
-#elif METHOD_FS
-            em.init(sampler.FS());
-#endif
+            em.init();
             if (em.exec()) {
-                auto rst = em.getResult();
+                auto rst = em.get();
                 std::lock_guard<std::mutex> guard(avg_est_mutex);
-                n_success++;
+                n_suc++;
                 alpha += rst[0];
                 int pos = 0;
                 for (auto&& pr : truth) {
@@ -95,30 +103,38 @@ int main(int argc, char* argv[]) {
                     pos++;
                 }
             }
-            echo(n_success, states);
+            states[core]++;
+            echo(n_suc, states);
         }
     };
 
-    echo(n_success, states);
+    echo(n_suc, states);
     vector<std::future<void>> futures;
     futures.reserve(FLAGS_cores);
     for (int core = 0; core < FLAGS_cores; core++)
-        futures.push_back(std::async(std::launch::async, task, core));
+        futures.push_back(std::async(std::launch::async, fun_task, core));
     for (auto& f : futures) f.get();
 
-    printf("\n\n%d out of %d succed.\n", n_success, FLAGS_trials * FLAGS_cores);
+    printf("\n\n%d out of %d succed.\n", n_suc, FLAGS_trials * FLAGS_cores);
 
     // saving ...
-    vector<std::tuple<int, double, double>> rst;
-    rst.reserve(truth.size() + 1);
-    rst.emplace_back(-1, alpha / n_success, 0);
-    int pos = 0;
-    for (auto&& pr : truth) {
-        rst.emplace_back(pr.first, theta_hat[pos] / n_success,
-                         std::sqrt(err[pos] / n_success) / pr.second);
-        pos++;
-    }
-    ioutils::saveTupleVec(rst, FLAGS_output, true, "{}\t{:.6e}\t{:.6e}\n");
+    if (n_suc > 0) {
+        vector<std::tuple<int, double, double>> rst;
+        rst.reserve(truth.size() + 1);
+
+        alpha /= n_suc;
+        rst.emplace_back(-1, alpha, 0);
+        printf("alpha = %.4f\n", alpha);
+
+        int pos = 0;
+        for (auto&& pr : truth) {
+            rst.emplace_back(pr.first, theta_hat[pos] / n_suc,
+                             std::sqrt(err[pos] / n_suc) / pr.second);
+            pos++;
+        }
+        ioutils::saveTupleVec(rst, FLAGS_output, true, "{}\t{:.6e}\t{:.6e}\n");
+    } else
+        printf("EM Failed!\n");
 
     printf("cost time %s\n", tm.getStr().c_str());
     gflags::ShutDownCommandLineFlags();

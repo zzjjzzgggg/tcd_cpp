@@ -5,117 +5,139 @@
 
 #include "em_alg.h"
 
-void EM::init(vector<std::pair<int, int>>&& g_vec) {
-    g_vec_ = g_vec;
-    // find the empirical maximum tradic cardinality
-    M_ = std::max_element(g_vec.begin(), g_vec.end())->first;
+void EM::init() {
+    g_vec_ = sampler_->sample();
     // reserve space for z_ji
-    for (auto&& pr : g_vec) z_[pr.first].resize(conf_->mx_tc - pr.first + 1);
-
+    for (auto&& pr : g_vec_) z_[pr.first].resize(conf_->mx_tc - pr.first + 1);
     // initialize theta
-    // NOTE: propally initializing theta can improve convergence speed, and
-    // estimation accuracy significantly.
-    theta_vec_.resize(conf_->mx_tc + 1, 0);
-    double norm = 0;
+    theta_.resize(conf_->mx_tc + 1);
+
+#ifndef N_UN
+    randutils::initUniform(theta_);
+#else
+    // If graph size is unknown, we should initialize theta from index 1.
+    randutils::initUniform(theta_, 1);
+#endif
     randutils::default_rng rng;
-    for (int i = 0; i <= conf_->mx_tc; i++) {
-        // HepTh: 0.2
-        // theta_vec_[i] = std::pow(i + 1, -0.2 * rng.uniform() - 0.9);
-        theta_vec_[i] = rng.uniform();
-        norm += theta_vec_[i];
-    }
-    for (auto& theta : theta_vec_) theta /= norm;
-    alpha_ = 0.001 * (rng.uniform() + 1);  // initialize alpha_
-    // alpha_ = 0.01;
+    alpha_ = 0.01 * (rng.uniform() + 1);  // initialize alpha_
 }
 
 /**
  * update [z_ij]
  */
 void EM::EStep() {
-    nonzero_z_.clear();
-    for (const auto& pr : g_vec_) {
+    non_zero_z_.clear();
+    for (auto&& pr : g_vec_) {
         int j = pr.first, g = pr.second;
         double norm = 0;
         for (int i = j; i <= conf_->mx_tc; i++) {
-            double tmp = theta_vec_[i] * bji(j, i);
+            double tmp = sampler_->pji(j, i, alpha_) * theta_[i];
             norm += tmp;
             z_[j][i - j] = g * tmp;  // g_j * p_{i|j}
         }
-        for (int i = j; i <= conf_->mx_tc; i++) {
-            z_[j][i - j] = norm > 1e-9 ? z_[j][i - j] / norm : 0;
-            if (z_[j][i - j] > 1e-6)
-                nonzero_z_.emplace_back(i, j, z_[j][i - j]);
+        if (norm > 1e-9) {
+            for (int i = j; i <= conf_->mx_tc; i++) {
+                z_[j][i - j] /= norm;
+                double z = z_[j][i - j];
+                if (i <= conf_->mx_i && z > 1e-9)
+                    non_zero_z_.emplace_back(i, j, z);
+            }
+        } else {
+            std::fill(z_[j].begin(), z_[j].end(), 0);
         }
     }
 }
 
 bool EM::MStepTheta() {
     // store the old parameters before we update them
-    theta_pre_vec_ = theta_vec_;
-    std::fill(theta_vec_.begin(), theta_vec_.end(), 0);
+    auto theta_pre = theta_;
+    std::fill(theta_.begin(), theta_.end(), 0.0);
     // now update theta
     double norm = 0;
-    for (auto& pr : g_vec_) {
+    for (auto&& pr : g_vec_) {
         int j = pr.first;
         for (int i = j; i <= conf_->mx_tc; i++) {
             double z = z_[j][i - j];
-            theta_vec_[i] += z;
+            theta_[i] += z;
             norm += z;
         }
     }
-    // normalize theta and calculate change
+    // normalize theta and calculate diff
     int i = 0;
-    double change = 0;
-    for (auto& theta : theta_vec_) {
+    double diff = 0;
+    for (auto& theta : theta_) {
         theta /= norm;
-        change += std::abs(theta - theta_pre_vec_[i++]);
+        diff += std::abs(theta - theta_pre[i++]);
     }
-    return change <= conf_->eps_theta;
+    return diff < conf_->eps_theta;
 }
 
-// TODO: remember to change the d1 and d2 for US
+/**
+ * with L1 regularizer: max Q(alpha) - 1/2 alpha^2
+ */
 bool EM::MStepAlpha() {
     int iter = 0;
-    double p = conf_->p_tri;
-    // Newton iterations
     while (iter++ < conf_->mx_iter_alpha) {
-        double d1 = 0, d2 = 0;
-        for (const auto& triple : nonzero_z_) {
-            int i = std::get<0>(triple), j = std::get<1>(triple);
-            double z = std::get<2>(triple), e1 = 0, e2 = 0;
-            for (int s = 0; s < i; s++) {
-                double e = s < j ? s / (s * alpha_ + p)
-                                 : (s - j) / ((s - j) * alpha_ + 1 - p);
-                e1 += e - s / (s * alpha_ + 1);
-                e2 += -e * e + std::pow(s / (s * alpha_ + 1), 2);
-            }
-            d1 += z * e1;
-            d2 += z * e2;
+        double d1 = -alpha_, d2 = -1;
+        for (auto&& e : non_zero_z_) {
+            int i = std::get<0>(e), j = std::get<1>(e);
+            double z = std::get<2>(e);
+            auto grad = sampler_->getLGrad(i, j, alpha_);
+            d1 += z * grad.first;
+            d2 += z * grad.second;
         }
+        if (std::abs(d1) < 1e-3) break;
         double alpha_pre = alpha_;
         alpha_ -= d1 / d2;
-        if (std::abs(alpha_pre - alpha_) <= conf_->eps_alpha) break;
+        // printf("%2d a: %2.4e d1: %+.4e d2: %+.4e\n", iter, alpha_, d1, d2);
+        if (alpha_ < 0 || d2 > 0) {
+            alpha_ = 0.0001;
+            break;
+        }
+        if (std::abs(alpha_pre - alpha_) < conf_->eps_alpha) break;
     }
     return iter < conf_->mx_iter_alpha;
 }
 
 bool EM::exec() {
+    // The algorithm is not sensitive to alpha. So let EM converge to an
+    // approximate theta first.
+    for (int iters = 0; iters < conf_->mx_iter_theta; iters++) {
+        EStep();
+        if (MStepTheta()) break;
+    }
+    // Now, we adjust alpha.
     for (int iter = 0; iter < conf_->mx_iter_theta; iter++) {
         EStep();
-#ifdef METHOD_FS  // for FS, there is no need to estimate alpha
-        if (MStepTheta()) return true;
-#else
-        if (MStepAlpha() && MStepTheta()) return true;
-#endif
+        bool suc_alpha = sampler_->hasAlpha() ? MStepAlpha() : true;
+        bool suc_theta = MStepTheta();
+        if (suc_theta && suc_alpha) return true;
     }
     return false;
 }
 
-vector<double> EM::getResult() const {
+void EM::scale() {
+    theta_[0] = 0;
+    for (int i = 1; i <= conf_->mx_tc; i++) {
+        theta_[i] /= 1 - sampler_->bji(0, i, alpha_);
+        theta_[0] += theta_[i];
+    }
+    double q = 0, g = 0;
+    for (int i = 1; i <= conf_->mx_tc; i++) {
+        theta_[i] /= theta_[0];
+        q += theta_[i] * sampler_->bji(0, i, alpha_);
+    }
+    for (auto& pr : g_vec_) g += pr.second;
+    theta_[0] = g / (1 - q);
+}
+
+vector<double> EM::get() {
+#ifdef N_UN
+    scale();
+#endif
     vector<double> rst;
-    rst.reserve(theta_vec_.size() + 1);
+    rst.reserve(theta_.size() + 1);
     rst.push_back(alpha_);
-    rst.insert(rst.end(), theta_vec_.begin(), theta_vec_.end());
+    rst.insert(rst.end(), theta_.begin(), theta_.end());
     return rst;
 }
