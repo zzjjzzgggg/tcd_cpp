@@ -9,17 +9,18 @@ void EM::init() {
     g_vec_ = sampler_->sample();
     // reserve space for z_ji
     for (auto&& pr : g_vec_) z_[pr.first].resize(conf_->mx_tc - pr.first + 1);
-    // initialize theta
-    theta_.resize(conf_->mx_tc + 1);
 
 #ifndef N_UN
-    randutils::initUniform(theta_);
+    int offset = 0;
 #else
-    // If graph size is unknown, we should initialize theta from index 1.
-    randutils::initUniform(theta_, 1);
+    int offset = 1;
 #endif
+    // initialize theta
+    theta_.resize(conf_->mx_tc + 1);
+    randutils::initUniform(theta_, offset);
+    // initialize alpha
     randutils::default_rng rng;
-    alpha_ = 0.01 * (rng.uniform() + 1);  // initialize alpha_
+    alpha_ = 0.01 * (rng.uniform() + 1);
 }
 
 /**

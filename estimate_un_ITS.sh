@@ -1,7 +1,7 @@
 #! /bin/bash
 cmd=estimate_un_its; echo "compiling $cmd"; make $cmd > /dev/null
 
-dir="../../pokec"; pe=0.2 ; rpt=1; W=10000 ; mx_i=200
+dir="../../pokec"; pe=0.1 ; rpt=1; W=10000 ; mx_i=200
 
 cores=$(grep -c ^processor /proc/cpuinfo); total="$(($rpt * $cores))"
 output="theta_un_ITS_p${pe}_r${total}.dat"

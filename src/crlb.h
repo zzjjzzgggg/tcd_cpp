@@ -13,7 +13,7 @@
 using namespace Eigen;
 
 /**
- * Default to ITS (ITS-color)
+ * ITS (ITS-color)
  */
 class CRLB {
 public:
@@ -45,7 +45,7 @@ protected:
     // triangle.
     double n_ = 0;
 
-    VectorXd theta_, crlb_;
+    VectorXd theta_, crlb_, phi_;
 
 public:
     CRLB(const Config* conf) : conf_(conf) {}
@@ -67,10 +67,18 @@ public:
                 q += bji(0, i) * theta;
             }
             n_ *= 1 - q;
+
+            phi_ = VectorXd::Zero(conf_->W);
+            for (int i = 0; i < conf_->W; i++)
+                phi_(i) = theta_(i) * (1 - bji(0, i + 1));
+            phi_ /= phi_.sum();
         }
         // std::cout << theta_ << std::endl;
     }
 
+    /**
+     * P(Y=j|X=i)
+     */
     virtual double bji(const int j, const int i) const {
         return SpecFun::BetaBinomial(j, i, conf_->p_tri / conf_->alpha,
                                      (1 - conf_->p_tri) / conf_->alpha);
@@ -78,32 +86,63 @@ public:
 
     /**
      * ITS sampling matrix: sample each triangle identically
+     * Known graph size
      */
     MatrixXd getB() const {
-        if (conf_->known_size) {
-            MatrixXd B = MatrixXd::Zero(conf_->W + 1, conf_->W + 1);
-            for (int j = 0; j <= conf_->W; j++)
-                for (int i = j; i <= conf_->W; i++) B(j, i) = bji(j, i);
-            return B;
-        } else {
-            printf("unknown graph size\n");
-            MatrixXd B = MatrixXd::Zero(conf_->W, conf_->W);
-            for (int j = 1; j <= conf_->W; j++)
-                for (int i = j; i <= conf_->W; i++)
-                    B(j - 1, i - 1) = bji(j, i) / (1 - bji(0, i));
-            return B;
-        }
+        MatrixXd B = MatrixXd::Zero(conf_->W + 1, conf_->W + 1);
+        for (int j = 0; j <= conf_->W; j++)
+            for (int i = j; i <= conf_->W; i++) B(j, i) = bji(j, i);
+        return B;
     }
 
-    void calCRLB() {
+    /**
+     * Unknown graph size
+     */
+    MatrixXd getA() const {
+        MatrixXd A = MatrixXd::Zero(conf_->W, conf_->W);
+        for (int j = 1; j <= conf_->W; j++)
+            for (int i = j; i <= conf_->W; i++)
+                A(j - 1, i - 1) = bji(j, i) / (1 - bji(0, i));
+        return A;
+    }
+
+    MatrixXd getH() const {
+        MatrixXd H = MatrixXd::Zero(conf_->W, conf_->W);
+        for (int i = 0; i < conf_->W; i++)
+            for (int k = 0; k < conf_->W; k++) {
+                if (i == k)
+                    H(i, i) = theta_(i) * (1 - theta_(i)) / phi_(i);
+                else
+                    H(i, k) = -theta_(i) * theta_(k) / phi_(i);
+            }
+        return H;
+    }
+
+    void calCRLBKnownSize() {
         MatrixXd B = getB();
         MatrixXd D = (B * theta_).asDiagonal().inverse();
         MatrixXd J = B.transpose() * D * B;
-        MatrixXd J_inv = J.inverse();
-        MatrixXd I = J_inv - theta_ * theta_.transpose();
-
+        MatrixXd I = J.inverse() - theta_ * theta_.transpose();
         crlb_ = (I.diagonal() / n_).cwiseSqrt();
-        std::cout << "squared-crlb =\n" << crlb_ << "\n\n";
+        std::cout << "(known size) squared-crlb =\n" << crlb_ << "\n\n";
+    }
+
+    void calCRLBUnknownSize() {
+        MatrixXd A = getA();
+        MatrixXd D = (A * theta_).asDiagonal().inverse();
+        MatrixXd J_phi = A.transpose() * D * A;
+        MatrixXd J_phi_inv = J_phi.inverse() - phi_ * phi_.transpose();
+        MatrixXd H = getH();
+        MatrixXd I = H * J_phi_inv * H.transpose();
+        crlb_ = (I.diagonal() / n_).cwiseSqrt();
+        std::cout << "(unknown size) squared-crlb =\n" << crlb_ << "\n\n";
+    }
+
+    void calCRLB() {
+        if (conf_->known_size)
+            calCRLBKnownSize();
+        else
+            calCRLBUnknownSize();
     }
 
     void save(const string& output) {

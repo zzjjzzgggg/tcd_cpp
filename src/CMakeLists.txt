@@ -12,7 +12,7 @@ target_link_libraries(em ${LIBRARIES})
 
 add_library(em_un em_alg.cpp)
 target_link_libraries(em_un ${LIBRARIES})
-target_compile_definitions(em_un  PUBLIC N_UN=1)
+target_compile_definitions(em_un PUBLIC N_UN=1)
 
 ##################################################################################
 # n known
@@ -31,7 +31,6 @@ add_executable(estimate_sgs main_estimate.cpp)
 target_link_libraries(estimate_sgs em)
 target_compile_definitions(estimate_sgs PRIVATE S_SGS=1)
 
-
 ##################################################################################
 # n unknown
 ## ITS
@@ -49,17 +48,7 @@ add_executable(estimate_un_sgs main_estimate.cpp)
 target_link_libraries(estimate_un_sgs em_un)
 target_compile_definitions(estimate_un_sgs PRIVATE S_SGS=1)
 
-
-## SH
-# add_executable(estimate_sh main_estimate.cpp)
-# target_link_libraries(estimate_sh em)
-# target_compile_definitions(estimate_sh PRIVATE S_SH=1)
-
-## SH Flow
-# add_executable(estimate_sh_flow main_estimate.cpp)
-# target_link_libraries(estimate_sh_flow em)
-# target_compile_definitions(estimate_sh_flow PRIVATE S_SH_FLOW=1)
-
+##################################################################################
 # crlb
 add_executable(calcrlb_its main_crlb.cpp)
 target_link_libraries(calcrlb_its ${LIBRARIES})
@@ -68,7 +57,6 @@ target_compile_definitions(calcrlb_its PRIVATE S_ITS=1)
 add_executable(calcrlb_sgs main_crlb.cpp)
 target_link_libraries(calcrlb_sgs ${LIBRARIES})
 target_compile_definitions(calcrlb_sgs PRIVATE S_SGS=1)
-
 
 # test
 add_executable(test-me main_test.cpp)

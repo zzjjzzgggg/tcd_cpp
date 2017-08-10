@@ -2,8 +2,8 @@
 cmd=calcrlb_is; echo "compiling $cmd"; make $cmd > /dev/null
 
 dir=../../dblp
-W=20 ; pt=0.22
+W=20 ; pt=0.02
 
-theta=theta_W20.dat ; output=crlb_IS_W20_p${pt}.dat
+theta=theta_W20.dat ; output=crlb_ITS_W20_p${pt}.dat
 ./$cmd -theta $dir/$theta -output $dir/$output -mx_tc $W -p_tri $pt \
 	-n $(sed -n 1p $dir/parms) -alpha 0.1

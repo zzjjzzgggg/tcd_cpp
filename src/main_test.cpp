@@ -7,5 +7,8 @@
 
 int main(int argc, char* argv[]) {
     printf("Built: %s %s\n", __DATE__, __TIME__);
+
+    for (int i = 1; i < 20; i++)
+        printf("i: %d, %d\n", i, int(std::floor(std::log2(i))));
     return 0;
 }

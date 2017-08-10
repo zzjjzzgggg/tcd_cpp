@@ -1,7 +1,8 @@
 #! /bin/bash
 cmd=estimate_itsc ; echo "compiling $cmd" ; make $cmd > /dev/null
 
-dir="../../hepth" ; pe=0.2 ; rpt=10 ; W=2000 ; MX_i=200
+dir="../../hepth"
+pe=0.2 ; rpt=10 ; W=2000 ; MX_i=200
 
 cores=$(grep -c ^processor /proc/cpuinfo); total="$(($rpt * $cores))"
 output="theta_ITSC_p${pe}_r${total}.dat"
