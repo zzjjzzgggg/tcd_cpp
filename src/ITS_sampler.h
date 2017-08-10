@@ -36,7 +36,7 @@ public:
     }
 
     double bji(const int j, const int i, const double alpha) const override {
-        return bb(j, i, alpha);
+        return i >= j ? bb(j, i, alpha) : 0;
     }
 
     std::pair<double, double> getLGrad(const int i, const int j,
