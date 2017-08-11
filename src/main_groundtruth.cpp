@@ -23,6 +23,7 @@ int main(int argc, char* argv[]) {
     int n = 0;
     for (auto&& ni = G.beginNI(); ni != G.endNI(); ni++) {
         int tc = countNodeDirTriads(ni->first, G);
+        tc = tc > 0 ? int(std::floor(std::log2(tc))) : -1;
         if (!FLAGS_un || tc > 0) {
             tc_to_num_nodes[tc]++;
             n++;
@@ -37,7 +38,8 @@ int main(int argc, char* argv[]) {
 
     std::sort(dist.begin(), dist.end());
 
-    ioutils::saveTupleVec(dist, FLAGS_output, true, "{}\t{:.6e}\t{}\n");
+    string outfnm = strutils::replaceFilename(FLAGS_graph, FLAGS_output);
+    ioutils::saveTupleVec(dist, outfnm, true, "{}\t{:.6e}\t{}\n");
 
     printf("cost time %s\n", tm.getStr().c_str());
     gflags::ShutDownCommandLineFlags();

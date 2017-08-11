@@ -110,9 +110,9 @@ bool EM::exec() {
     // Now, we adjust alpha.
     for (int iter = 0; iter < conf_->mx_iter_theta; iter++) {
         EStep();
-        bool suc_alpha = sampler_->hasAlpha() ? MStepAlpha() : true;
-        bool suc_theta = MStepTheta();
-        if (suc_theta && suc_alpha) return true;
+        if (bool suc = sampler_->hasAlpha() ? MStepAlpha() : true;
+            suc && MStepTheta())
+            return true;
     }
     return false;
 }
