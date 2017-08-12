@@ -60,6 +60,7 @@ private:
     // to use a map, rather than a vector.
     unordered_map<int, vector<double>> z_;
 
+    // only a small fraction of non-zero z is used for estimating alpha
     vector<std::tuple<int, int, double>> non_zero_z_;
 
 private:

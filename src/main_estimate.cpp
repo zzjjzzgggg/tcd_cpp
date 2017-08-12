@@ -91,15 +91,13 @@ int main(int argc, char* argv[]) {
         for (int trial = 0; trial < FLAGS_trials; trial++) {
             em.init();
             if (em.exec()) {
-                auto rst = em.get();
+                auto rst = em.get();  // the first element is alpha_hat
                 std::lock_guard<std::mutex> guard(avg_est_mutex);
                 n_suc++;
                 alpha += rst[0];
-                int pos = 0;
-                for (auto&& pr : truth) {
-                    theta_hat[pos] += rst[pr.first + 1];
-                    err[pos] += std::pow(rst[pr.first + 1] - pr.second, 2);
-                    pos++;
+                for (size_t l = 0; l < truth.size(); l++) {
+                    theta_hat[l] += rst[l + 1];
+                    err[l] += std::pow(rst[l + 1] - truth[l].second, 2);
                 }
             }
             states[core]++;
@@ -118,22 +116,20 @@ int main(int argc, char* argv[]) {
 
     // saving ...
     if (n_suc > 0) {
-        vector<std::tuple<int, double, double>> rst;
-        rst.reserve(truth.size() + 1);
+        vector<std::tuple<int, double, double>> est_err_v;
+        est_err_v.reserve(truth.size());
 
         alpha /= n_suc;
-        rst.emplace_back(-10, alpha, 0);
         printf("alpha = %.6e\n", alpha);
 
-        int pos = 0;
-        for (auto&& pr : truth) {
-            rst.emplace_back(pr.first, theta_hat[pos] / n_suc,
-                             std::sqrt(err[pos] / n_suc) / pr.second);
-            pos++;
+        for (size_t l = 0; l < truth.size(); l++) {
+            auto[k, theta] = truth[l];
+            est_err_v.emplace_back(k, theta_hat[l] / n_suc,
+                                   std::sqrt(err[l] / n_suc) / theta);
         }
-        ioutils::saveTupleVec(rst,
-                              strutils::subFilename(FLAGS_graph, FLAGS_output),
-                              true, "{}\t{:.6e}\t{:.6e}\n");
+        ioutils::saveTupleVec(
+            est_err_v, strutils::subFilename(FLAGS_graph, FLAGS_output), true,
+            "{}\t{:.6e}\t{:.6e}\n", "# alpha: {:.6e}\n"_format(alpha));
     }
 
     printf("cost time %s\n", tm.getStr().c_str());

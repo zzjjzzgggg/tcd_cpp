@@ -35,8 +35,8 @@ void EM::EStep() {
         }
         if (norm < 1e-9) continue;
         for (int k = getK(j); k <= K_; k++) {
-            z_[j][k + 1] *= g / norm;
-            double z = z_[j][k + 1];
+            double& z = z_[j][k + 1];
+            z *= g / norm;
             if (k <= mx_k_ && z > 1e-9) non_zero_z_.emplace_back(k, j, z);
         }
     }
@@ -51,7 +51,7 @@ bool EM::MStepTheta() {
     for (const auto& pr : g_vec_) {
         const int j = pr.first;
         for (int k = getK(j); k <= K_; k++) {
-            double z = z_[j][k + 1];
+            const double z = z_[j][k + 1];
             theta_[k + 1] += z;
             norm += z;
         }
@@ -149,7 +149,6 @@ double EM::getLikelihood() const {
 double EM::getLikelihoodTruth() const {
     auto truth = ioutils::loadVec<double>(
         "/dat/workspace/tcd_journal/hepth/theta_W2K_binned.dat", 1);
-
     double likelihood = 0;
     for (const auto & [ j, g ] : g_vec_) {
         double tmp = 0;

@@ -1,7 +1,7 @@
 #! /bin/bash
 cmd=estimate_its; echo "compiling $cmd"; make $cmd > /dev/null
 
-dir="../../hepth" ; pe=0.3 ; rpt=10 ; W=2047
+dir="../../hepth" ; pe=0.1 ; rpt=10 ; W=2047
 
 cores=$(grep -c ^processor /proc/cpuinfo); total="$(($rpt * $cores))"
 output="theta_ITS_binned_p${pe}_r${total}.dat"
