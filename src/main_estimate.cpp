@@ -27,7 +27,7 @@ DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 DEFINE_double(p_node, 0.1, "node sampling rate");
 DEFINE_double(p_edge, 0.1, "edge sampling rate");
 DEFINE_double(eps_theta, 1e-3, "threshold of estimating theta");
-DEFINE_double(eps_alpha, 1e-3, "threshold of estimating alpha");
+DEFINE_double(eps_alpha, 1e-6, "threshold of estimating alpha");
 
 std::mutex print_mutex;
 void echo(const int n_suc, vector<int>& states) {
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
         est_err_v.reserve(truth.size());
 
         alpha /= n_suc;
-        printf("alpha = %.6e\n", alpha);
+        printf("alpha = %.3e\n", alpha);
 
         for (size_t l = 0; l < truth.size(); l++) {
             auto[k, theta] = truth[l];
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
         }
         ioutils::saveTupleVec(
             est_err_v, strutils::subFilename(FLAGS_graph, FLAGS_output), true,
-            "{}\t{:.6e}\t{:.6e}\n", "# alpha: {:.6e}\n"_format(alpha));
+            "{}\t{:.3e}\t{:.3e}\n", "# alpha: {:.3e}\n"_format(alpha));
     }
 
     printf("cost time %s\n", tm.getStr().c_str());
