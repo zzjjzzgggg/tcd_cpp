@@ -32,7 +32,7 @@ public:
         for (auto&& edge : edges_)
             if (node_color[edge.first] == node_color[edge.second])
                 G.addEdge(edge.first, edge.second);
-        G.optimize();
+        G.defrag();
         return statTrids(G);
     }
 };

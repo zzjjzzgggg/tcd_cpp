@@ -13,22 +13,21 @@
 
 #include <gflags/gflags.h>
 
-DEFINE_string(graph, "", "graph file name");
-DEFINE_string(theta, "", "theta groundtruth");
+DEFINE_string(graph, "", "graph full path");
+DEFINE_string(theta, "", "theta groundtruth file name");
 DEFINE_string(output, "", "output file name");
-DEFINE_string(others, "", "reserved string");
 
 DEFINE_int32(mx_tc, 2000, "maximum triadic cardinality");
-DEFINE_int32(mx_i, 200, "maximum triadic cardinality");
-DEFINE_int32(mx_iter_theta, 500, "maximum iterations for estimating theta");
-DEFINE_int32(mx_iter_alpha, 200, "maximum iterations for estimating alpha");
+DEFINE_int32(mx_i, 128, "maximum triadic cardinality");
+DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
+DEFINE_int32(mx_iter_alpha, 10, "maximum iterations for estimating alpha");
 DEFINE_int32(trials, 10, "trials per core");
 DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 
 DEFINE_double(p_node, 0.1, "node sampling rate");
 DEFINE_double(p_edge, 0.1, "edge sampling rate");
-DEFINE_double(eps_theta, 0.001, "threshold of estimating theta");
-DEFINE_double(eps_alpha, 0.001, "threshold of estimating alpha");
+DEFINE_double(eps_theta, 1e-3, "threshold of estimating theta");
+DEFINE_double(eps_alpha, 1e-3, "threshold of estimating alpha");
 
 std::mutex print_mutex;
 void echo(const int n_suc, vector<int>& states) {
@@ -50,7 +49,6 @@ int main(int argc, char* argv[]) {
     confs.mx_tc = FLAGS_mx_tc;
     confs.p_edge = FLAGS_p_edge;
     confs.p_node = FLAGS_p_node;
-    confs.others = FLAGS_others;
     confs.echo();
 
 #ifdef S_ITS
@@ -78,7 +76,8 @@ int main(int argc, char* argv[]) {
 
     printf("trials per processor: %d\n\n", FLAGS_trials);
 
-    auto truth = ioutils::loadPrVec<int, double>(FLAGS_theta);
+    auto truth = ioutils::loadPrVec<int, double>(
+        strutils::subFilename(FLAGS_graph, FLAGS_theta));
 
     int n_suc = 0;
     double alpha = 0;
@@ -123,8 +122,8 @@ int main(int argc, char* argv[]) {
         rst.reserve(truth.size() + 1);
 
         alpha /= n_suc;
-        rst.emplace_back(-1, alpha, 0);
-        printf("alpha = %.4f\n", alpha);
+        rst.emplace_back(-10, alpha, 0);
+        printf("alpha = %.6e\n", alpha);
 
         int pos = 0;
         for (auto&& pr : truth) {
@@ -132,9 +131,10 @@ int main(int argc, char* argv[]) {
                              std::sqrt(err[pos] / n_suc) / pr.second);
             pos++;
         }
-        ioutils::saveTupleVec(rst, FLAGS_output, true, "{}\t{:.6e}\t{:.6e}\n");
-    } else
-        printf("EM Failed!\n");
+        ioutils::saveTupleVec(rst,
+                              strutils::subFilename(FLAGS_graph, FLAGS_output),
+                              true, "{}\t{:.6e}\t{:.6e}\n");
+    }
 
     printf("cost time %s\n", tm.getStr().c_str());
     gflags::ShutDownCommandLineFlags();

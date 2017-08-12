@@ -28,10 +28,9 @@ public:
     vector<std::pair<int, int>> sample() const override {
         UGraph G(GraphType::MULTI);
         randutils::default_rng rng;
-        for (auto&& edge : edges_)
-            if (rng.uniform() < conf_->p_edge)
-                G.addEdge(edge.first, edge.second);
-        G.optimize();
+        for (const auto & [ src, dst ] : edges_)
+            if (rng.uniform() < conf_->p_edge) G.addEdge(src, dst);
+        G.defrag();
         return statTrids(G);
     }
 
@@ -39,30 +38,48 @@ public:
         return i >= j ? bb(j, i, alpha) : 0;
     }
 
-    std::pair<double, double> getLGrad(const int i, const int j,
+    std::pair<double, double> getLGrad(const int k, const int j,
                                        const double alpha) const override {
+        if (j == 0 && k < 0) return std::make_pair<double, double>(0, 0);
+
 #ifndef N_UN
-        return dLogBji(i, j, alpha);
+        double d1 = 0, d2 = 0, B = 0;
+        for (int i = std::max(j, int(std::pow(2, k))); i < (2 << k); i++) {
+            double b = bji(j, i, alpha);
+            auto[d1_log_b, d2_log_b] = dLogBji(i, j, alpha);
+            d1 += d1_log_b * b;
+            d2 += (d2_log_b + d1_log_b * d1_log_b) * b;
+            B += b;
+        }
+        d1 /= B;
+        d2 = -d1 * d1 + d2 / B;
+        return std::make_pair(d1, d2);
 #else
-        return dLogAji(i, j, alpha);
+        return dLogAji(k, j, alpha);
 #endif
     }
 
     // bool hasAlpha() const override { return false; }
 
+    /**
+     * return [d log(b) / d alpha, d^2 log(b) /d alpha^2]
+     */
     std::pair<double, double> dLogBji(const int i, const int j,
                                       const double alpha) const {
-        double d1 = 0, d2 = 0, e1, e2;
+        double d1 = 0, d2 = 0;
         for (int s = 1; s < i; s++) {
-            e1 = s < j ? s / (s * alpha + p_tri_)
-                       : (s - j) / ((s - j) * alpha + 1 - p_tri_);
-            e2 = s / (s * alpha + 1);
+            double e1 = s < j ? s / (s * alpha + p_tri_)
+                              : (s - j) / ((s - j) * alpha + 1 - p_tri_),
+                   e2 = s / (s * alpha + 1);
             d1 += e1 - e2;
             d2 += -e1 * e1 + e2 * e2;
         }
         return std::make_pair(d1, d2);
     }
 
+    /**
+     * return [d log(a) / d alpha, d^2 log(a) /d alpha^2]
+     */
     std::pair<double, double> dLogAji(const int i, const int j,
                                       const double alpha) const {
         double d1_log_b = 0, d2_log_b = 0, d1_b0_sum = 0, d2_b0_sum = 0;

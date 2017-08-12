@@ -48,10 +48,13 @@ private:
     const Config* conf_;
     const Sampler* sampler_;
 
-    vector<std::pair<int, int>> g_vec_;
+    int K_, mx_k_;  // largest bin, k = 0, 1, ..., K_, and largest bin for
+                    // estimating alpha
 
     double alpha_;
-    vector<double> theta_;
+    vector<double> theta_;  // theta_k = p_k
+
+    vector<std::pair<int, int>> g_vec_;
 
     // because sampled cardinality j is usually sparsely populated, it is better
     // to use a map, rather than a vector.
@@ -60,6 +63,10 @@ private:
     vector<std::tuple<int, int, double>> non_zero_z_;
 
 private:
+    inline int getK(const int j) const {
+        return j > 0 ? int(std::floor(std::log2(j))) : -1;
+    }
+
     void EStep();
     bool MStepTheta();
     bool MStepAlpha();
@@ -67,12 +74,18 @@ private:
 
 public:
     EM(const Config* conf, const Sampler* sampler)
-        : conf_(conf), sampler_(sampler) {}
+        : conf_(conf), sampler_(sampler) {
+        K_ = getK(conf_->mx_tc);
+        mx_k_ = getK(conf_->mx_i);
+    }
 
     void init();
 
     bool exec();
 
+    double getLikelihood() const;
+
+    double getLikelihoodTruth() const;
     /**
      * the first element is hat_alpha, remainings are hat_theta
      */

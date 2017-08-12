@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5.1)
-project (Discoverability C CXX)
+project (TCD C CXX)
 
 include(CheckCXXCompilerFlag)
 

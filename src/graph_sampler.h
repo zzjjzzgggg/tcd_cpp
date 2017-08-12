@@ -91,14 +91,20 @@ public:
     }
 
     /**
-     * P(Y=j|X=i, .)
+     * B_k(j) = sum_{i=2^k}{2^{k+1}-1} b_ji/2^k
      */
-    double pji(const int j, const int i, const double alpha) const {
+    double pjk(const int j, const int k, const double alpha) const {
+        if (j == 0 && k < 0) return 1;
+        double sum = 0;
+        for (int i = std::max(j, int(std::pow(2, k))); i < std::pow(2, k + 1);
+             i++) {
 #ifndef N_UN
-        return bji(j, i, alpha);
+            sum += bji(j, i, alpha);
 #else
-        return bji(j, i, alpha) / (1 - bji(0, i, alpha));
+            sum += bji(j, i, alpha) / (1 - bji(0, i, alpha));
 #endif
+        }
+        return sum / std::pow(2, k);
     }
 
     virtual void info() const = 0;

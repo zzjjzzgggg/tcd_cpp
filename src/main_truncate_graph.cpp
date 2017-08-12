@@ -24,7 +24,7 @@ void truncateByNode() {
             H.addEdge(src, dst);
         }
     }
-    H.optimize();
+    H.defrag();
     saveEdgelist(
         H, strutils::insertMiddle(FLAGS_graph, "W{}"_format(FLAGS_mx_tc)));
 }
@@ -75,7 +75,7 @@ void truncateByEdge() {
             for (auto&& pr : new_nd_triads) nd_triads[pr.first] += pr.second;
         }
     }
-    G.optimize();
+    G.defrag();
     printf("N: %d, E: %d\n", G.getNodes(), G.getEdges());
     string mid = "W{}"_format(strutils::prettyNumber(FLAGS_mx_tc));
     saveEdgelist(G, strutils::insertMiddle(FLAGS_graph, mid));

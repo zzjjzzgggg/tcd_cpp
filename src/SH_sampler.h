@@ -88,7 +88,7 @@ public:
                 }
             }
         }
-        G.optimize();
+        G.defrag();
         // printf("held nodes: %lu\n", held_nodes.size());
         return statTrids(G, held_nodes);
     }

@@ -7,44 +7,37 @@
 
 void EM::init() {
     g_vec_ = sampler_->sample();
-    // reserve space for z_ji
-    for (auto&& pr : g_vec_) z_[pr.first].resize(conf_->mx_tc - pr.first + 1);
+    for (const auto& pr : g_vec_) z_[pr.first].resize(K_ + 2);
 
 #ifndef N_UN
-    int offset = 0;
+    int start = 0;
 #else
-    int offset = 1;
+    int start = 1;
 #endif
     // initialize theta
-    theta_.resize(conf_->mx_tc + 1);
-    randutils::initUniform(theta_, offset);
+    theta_.resize(K_ + 2);
+    randutils::initUniform(theta_, start);
     // initialize alpha
     randutils::default_rng rng;
     alpha_ = 0.01 * (rng.uniform() + 1);
 }
 
 /**
- * update [z_ij]
+ * update [z_{jk}]
  */
 void EM::EStep() {
     non_zero_z_.clear();
-    for (auto&& pr : g_vec_) {
-        int j = pr.first, g = pr.second;
+    for (const auto & [ j, g ] : g_vec_) {
         double norm = 0;
-        for (int i = j; i <= conf_->mx_tc; i++) {
-            double tmp = sampler_->pji(j, i, alpha_) * theta_[i];
-            norm += tmp;
-            z_[j][i - j] = g * tmp;  // g_j * p_{i|j}
+        for (int k = getK(j); k <= K_; k++) {
+            z_[j][k + 1] = sampler_->pjk(j, k, alpha_) * theta_[k + 1];
+            norm += z_[j][k + 1];
         }
-        if (norm > 1e-9) {
-            for (int i = j; i <= conf_->mx_tc; i++) {
-                z_[j][i - j] /= norm;
-                double z = z_[j][i - j];
-                if (i <= conf_->mx_i && z > 1e-9)
-                    non_zero_z_.emplace_back(i, j, z);
-            }
-        } else {
-            std::fill(z_[j].begin(), z_[j].end(), 0);
+        if (norm < 1e-9) continue;
+        for (int k = getK(j); k <= K_; k++) {
+            z_[j][k + 1] *= g / norm;
+            double z = z_[j][k + 1];
+            if (k <= mx_k_ && z > 1e-9) non_zero_z_.emplace_back(k, j, z);
         }
     }
 }
@@ -55,20 +48,20 @@ bool EM::MStepTheta() {
     std::fill(theta_.begin(), theta_.end(), 0.0);
     // now update theta
     double norm = 0;
-    for (auto&& pr : g_vec_) {
-        int j = pr.first;
-        for (int i = j; i <= conf_->mx_tc; i++) {
-            double z = z_[j][i - j];
-            theta_[i] += z;
+    for (const auto& pr : g_vec_) {
+        const int j = pr.first;
+        for (int k = getK(j); k <= K_; k++) {
+            double z = z_[j][k + 1];
+            theta_[k + 1] += z;
             norm += z;
         }
     }
     // normalize theta and calculate diff
-    int i = 0;
+    int k = 0;
     double diff = 0;
     for (auto& theta : theta_) {
         theta /= norm;
-        diff += std::abs(theta - theta_pre[i++]);
+        diff += std::abs(theta - theta_pre[k++]);
     }
     return diff < conf_->eps_theta;
 }
@@ -80,22 +73,20 @@ bool EM::MStepAlpha() {
     int iter = 0;
     while (iter++ < conf_->mx_iter_alpha) {
         double d1 = -alpha_, d2 = -1;
-        for (auto&& e : non_zero_z_) {
-            int i = std::get<0>(e), j = std::get<1>(e);
-            double z = std::get<2>(e);
-            auto grad = sampler_->getLGrad(i, j, alpha_);
+        for (const auto & [ k, j, z ] : non_zero_z_) {
+            auto grad = sampler_->getLGrad(k, j, alpha_);
             d1 += z * grad.first;
             d2 += z * grad.second;
         }
-        if (std::abs(d1) < 1e-3) break;
-        double alpha_pre = alpha_;
         alpha_ -= d1 / d2;
-        // printf("%2d a: %2.4e d1: %+.4e d2: %+.4e\n", iter, alpha_, d1, d2);
+        double diff = std::abs(d1 / d2);
+        // printf("%2d a: %2.2e d1: %+.2e d2: %+.2e dif: %.4e\n", iter, alpha_,
+        //        d1, d2, diff);
         if (alpha_ < 0 || d2 > 0) {
             alpha_ = 0.0001;
             break;
         }
-        if (std::abs(alpha_pre - alpha_) < conf_->eps_alpha) break;
+        if (diff < conf_->eps_alpha) break;
     }
     return iter < conf_->mx_iter_alpha;
 }
@@ -103,16 +94,17 @@ bool EM::MStepAlpha() {
 bool EM::exec() {
     // The algorithm is not sensitive to alpha. So let EM converge to an
     // approximate theta first.
-    for (int iters = 0; iters < conf_->mx_iter_theta; iters++) {
-        EStep();
-        if (MStepTheta()) break;
-    }
+    // for (int iters = 0; iters < conf_->mx_iter_theta; iters++) {
+    //     EStep();
+    //     if (MStepTheta()) break;
+    // }
     // Now, we adjust alpha.
     for (int iter = 0; iter < conf_->mx_iter_theta; iter++) {
         EStep();
-        if (bool suc = sampler_->hasAlpha() ? MStepAlpha() : true;
-            suc && MStepTheta())
+        if ((sampler_->hasAlpha() ? MStepAlpha() : true) && MStepTheta())
             return true;
+        // if (iter % 10 == 0)
+        //     printf("%.4e / %.4e\n", getLikelihood(), getLikelihoodTruth());
     }
     return false;
 }
@@ -141,4 +133,29 @@ vector<double> EM::get() {
     rst.push_back(alpha_);
     rst.insert(rst.end(), theta_.begin(), theta_.end());
     return rst;
+}
+
+double EM::getLikelihood() const {
+    double likelihood = 0;
+    for (const auto & [ j, g ] : g_vec_) {
+        double tmp = 0;
+        for (int k = getK(j); k <= K_; k++)
+            tmp += theta_[k + 1] * sampler_->pjk(j, k, alpha_);
+        likelihood += g * std::log(tmp);
+    }
+    return likelihood;
+}
+
+double EM::getLikelihoodTruth() const {
+    auto truth = ioutils::loadVec<double>(
+        "/dat/workspace/tcd_journal/hepth/theta_W2K_binned.dat", 1);
+
+    double likelihood = 0;
+    for (const auto & [ j, g ] : g_vec_) {
+        double tmp = 0;
+        for (int k = getK(j); k <= K_; k++)
+            tmp += truth[k + 1] * sampler_->pjk(j, k, alpha_);
+        likelihood += g * std::log(tmp);
+    }
+    return likelihood;
 }

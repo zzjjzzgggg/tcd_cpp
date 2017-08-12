@@ -38,8 +38,9 @@ int main(int argc, char* argv[]) {
 
     std::sort(dist.begin(), dist.end());
 
-    string outfnm = strutils::replaceFilename(FLAGS_graph, FLAGS_output);
-    ioutils::saveTupleVec(dist, outfnm, true, "{}\t{:.6e}\t{}\n");
+    ioutils::saveTupleVec(dist,
+                          strutils::subFilename(FLAGS_graph, FLAGS_output),
+                          true, "{}\t{:.6e}\t{}\n");
 
     printf("cost time %s\n", tm.getStr().c_str());
     gflags::ShutDownCommandLineFlags();
