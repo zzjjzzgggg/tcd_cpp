@@ -19,22 +19,26 @@ int main(int argc, char* argv[]) {
 
     UGraph G = loadEdgeList<UGraph>(FLAGS_graph, GraphType::MULTI);
     printf("N: %d, E: %d\n", G.getNodes(), G.getEdges());
+    if (FLAGS_un)
+        printf("unknown graph size\n");
+    else
+        printf("graph size known\n");
 
-    int n = 0;
+    int n_plus = 0;
     for (auto&& ni = G.beginNI(); ni != G.endNI(); ni++) {
         int tc = countNodeDirTriads(ni->first, G);
-        tc = tc > 0 ? int(std::floor(std::log2(tc))) : -1;
+        int k = tc > 0 ? int(std::floor(std::log2(tc))) : -1;
         if (!FLAGS_un || tc > 0) {
-            tc_to_num_nodes[tc]++;
-            n++;
+            tc_to_num_nodes[k]++;
+            n_plus++;
         }
     }
 
     vector<std::tuple<int, double, int>> dist;
-    for (auto&& it : tc_to_num_nodes)
-        dist.emplace_back(it.first, it.second / double(n), it.second);
+    for (const auto & [ k, n ] : tc_to_num_nodes)
+        dist.emplace_back(k, n / double(n_plus), n);
     // if unknown graph size, store n_+ at head
-    if (FLAGS_un) dist.emplace_back(0, n, 0);
+    if (FLAGS_un) dist.emplace_back(-10, n_plus, 0);
 
     std::sort(dist.begin(), dist.end());
 

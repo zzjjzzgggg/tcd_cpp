@@ -40,23 +40,23 @@ public:
 
     std::pair<double, double> getLGrad(const int k, const int j,
                                        const double alpha) const override {
-        if (j == 0 && k < 0) return std::make_pair<double, double>(0, 0);
-
-#ifndef N_UN
-        double d1 = 0, d2 = 0, B = 0;
+        if (j == 0 && k < 0) return std::make_pair(0.0, 0.0);
+        double d1 = 0, d2 = 0, C = 0;
         for (int i = std::max(j, int(std::pow(2, k))); i < (2 << k); i++) {
-            double b = bji(j, i, alpha);
-            auto[d1_log_b, d2_log_b] = dLogBji(i, j, alpha);
-            d1 += d1_log_b * b;
-            d2 += (d2_log_b + d1_log_b * d1_log_b) * b;
-            B += b;
-        }
-        d1 /= B;
-        d2 = -d1 * d1 + d2 / B;
-        return std::make_pair(d1, d2);
+#ifndef N_UN
+            double c = bji(j, i, alpha);
+            auto[d1_log, d2_log] = dLogBji(i, j, alpha);
 #else
-        return dLogAji(k, j, alpha);
+            double c = bji(j, i, alpha) / (1 - bji(0, i, alpha));
+            auto[d1_log, d2_log] = dLogAji(i, j, alpha);
 #endif
+            d1 += d1_log * c;
+            d2 += (d2_log + d1_log * d1_log) * c;
+            C += c;
+        }
+        d1 /= C;
+        d2 = -d1 * d1 + d2 / C;
+        return std::make_pair(d1, d2);
     }
 
     // bool hasAlpha() const override { return false; }
@@ -93,12 +93,10 @@ public:
             d2_b0_sum += -e3 * e3 + e2 * e2;
         }
         double b0 = bji(0, i, alpha), d1_b0 = b0 * d1_b0_sum;
-        double d1_log_a = d1_log_b + d1_b0 / (1 - b0);
+        double d1 = d1_log_b + d1_b0 / (1 - b0);
         double d2_b0 = d1_b0 * d1_b0_sum + b0 * d2_b0_sum;
-        double d2_log_a =
-            d2_log_b + d2_b0 / (1 - b0) + std::pow(d1_b0 / (1 - b0), 2);
-
-        return std::make_pair(d1_log_a, d2_log_a);
+        double d2 = d2_log_b + d2_b0 / (1 - b0) + std::pow(d1_b0 / (1 - b0), 2);
+        return std::make_pair(d1, d2);
     }
 };
 

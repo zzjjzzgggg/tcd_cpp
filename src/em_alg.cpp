@@ -70,25 +70,19 @@ bool EM::MStepTheta() {
  * with L1 regularizer: max Q(alpha) - 1/2 alpha^2
  */
 bool EM::MStepAlpha() {
-    int iter = 0;
-    while (iter++ < conf_->mx_iter_alpha) {
-        double d1 = -alpha_, d2 = -1;
-        for (const auto & [ k, j, z ] : non_zero_z_) {
-            auto grad = sampler_->getLGrad(k, j, alpha_);
-            d1 += z * grad.first;
-            d2 += z * grad.second;
-        }
-        alpha_ -= d1 / d2;
-        double diff = std::abs(d1 / d2);
-        // printf("%2d a: %2.2e d1: %+.2e d2: %+.2e dif: %.4e\n", iter, alpha_,
-        //        d1, d2, diff);
-        if (alpha_ < 0 || d2 > 0) {
-            alpha_ = 0.0001;
-            break;
-        }
-        if (diff < conf_->eps_alpha) break;
+    double d1 = -alpha_, d2 = -1;
+    for (const auto & [ k, j, z ] : non_zero_z_) {
+        auto grad = sampler_->getLGrad(k, j, alpha_);
+        d1 += z * grad.first;
+        d2 += z * grad.second;
     }
-    return iter < conf_->mx_iter_alpha;
+    alpha_ -= d1 / d2;
+    // printf("%2d a: %2.2e d1: %+.2e d2: %+.2e\n", iter, alpha_, d1, d2);
+    if (alpha_ < 0 || d2 > 0) {
+        alpha_ = 0.0001;
+        return true;
+    }
+    return std::abs(d1 / d2) < conf_->eps_alpha;
 }
 
 bool EM::exec() {
@@ -101,9 +95,18 @@ bool EM::exec() {
     // Now, we adjust alpha.
     for (int iter = 0; iter < conf_->mx_iter_theta; iter++) {
         EStep();
-        if ((sampler_->hasAlpha() ? MStepAlpha() : true) && MStepTheta())
-            return true;
-        // if (iter % 10 == 0)
+        bool suc_alpha = !sampler_->hasAlpha();
+        if (!suc_alpha) {
+            for (int iter_a = 0; iter_a < conf_->mx_iter_alpha; iter_a++)
+                if (MStepAlpha()) {
+                    suc_alpha = true;
+                    break;
+                }
+        }
+        if (!suc_alpha) return false;
+        if (MStepTheta()) return true;
+
+        // if (iter % 5 == 0)
         //     printf("%.4e / %.4e\n", getLikelihood(), getLikelihoodTruth());
     }
     return false;
@@ -111,17 +114,22 @@ bool EM::exec() {
 
 void EM::scale() {
     theta_[0] = 0;
-    for (int i = 1; i <= conf_->mx_tc; i++) {
-        theta_[i] /= 1 - sampler_->bji(0, i, alpha_);
-        theta_[0] += theta_[i];
+    vector<double> q(K_ + 1);
+    for (int k = 0; k <= K_; k++) {
+        q[k] = 0;
+        for (int i = int(std::pow(2, k)); i < 2 << k; i++)
+            q[k] += sampler_->bji(0, i, alpha_);
+        q[k] /= std::pow(2, k);
+        theta_[k + 1] /= 1 - q[k];
+        theta_[0] += theta_[k + 1];
     }
-    double q = 0, g = 0;
-    for (int i = 1; i <= conf_->mx_tc; i++) {
-        theta_[i] /= theta_[0];
-        q += theta_[i] * sampler_->bji(0, i, alpha_);
+    double q_avg = 0, g = 0;
+    for (int k = 0; k <= K_; k++) {
+        theta_[k + 1] /= theta_[0];
+        q_avg += theta_[k + 1] * q[k];
     }
     for (auto& pr : g_vec_) g += pr.second;
-    theta_[0] = g / (1 - q);
+    theta_[0] = g / (1 - q_avg);
 }
 
 vector<double> EM::get() {
