@@ -20,7 +20,7 @@ DEFINE_string(output, "", "output file name");
 DEFINE_int32(mx_tc, 2047, "maximum triadic cardinality");
 DEFINE_int32(mx_i, 256, "maximum triadic cardinality");
 DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
-DEFINE_int32(mx_iter_alpha, 20, "maximum iterations for estimating alpha");
+DEFINE_int32(mx_iter_alpha, 30, "maximum iterations for estimating alpha");
 DEFINE_int32(trials, 10, "trials per core");
 DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 
@@ -129,7 +129,8 @@ int main(int argc, char* argv[]) {
         }
         ioutils::saveTupleVec(
             est_err_v, strutils::subFilename(FLAGS_graph, FLAGS_output), true,
-            "{}\t{:.3e}\t{:.3e}\n", "# alpha: {:.3e}\n"_format(alpha));
+            "{}\t{:.3e}\t{:.3e}\n",
+            "# runs: {}\n# alpha: {:.3e}\n"_format(n_suc, alpha));
     }
 
     printf("cost time %s\n", tm.getStr().c_str());

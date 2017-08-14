@@ -50,7 +50,6 @@ private:
 
     int K_, mx_k_;  // largest bin, k = 0, 1, ..., K_, and largest bin for
                     // estimating alpha
-
     double alpha_;
     vector<double> theta_;  // theta_k = p_k
 

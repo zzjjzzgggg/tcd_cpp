@@ -7,7 +7,7 @@
 
 #include <gflags/gflags.h>
 
-DEFINE_string(graph, "", "graph file name");
+DEFINE_string(graph, "", "graph full path");
 DEFINE_string(output, "", "output file name");
 DEFINE_bool(un, false, "graph size unknown?");
 

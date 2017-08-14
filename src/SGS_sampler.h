@@ -48,11 +48,6 @@ public:
     }
 
     bool hasAlpha() const override { return false; }
-
-    std::pair<double, double> getLGrad(const int i, const int j,
-                                       const double alpha) const override {
-        return std::pair<double, double>(0, 0);
-    }
 };
 
 #endif /* __SGS_SAMPLER_H__ */

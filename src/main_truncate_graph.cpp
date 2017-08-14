@@ -82,7 +82,7 @@ void truncateByEdge() {
 }
 
 int main(int argc, char* argv[]) {
-    gflags::SetUsageMessage("usage:");
+    gflags::SetUsageMessage("");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     osutils::Timer tm;
 

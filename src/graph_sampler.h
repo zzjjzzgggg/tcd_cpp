@@ -135,7 +135,9 @@ public:
      * first and second order derivations of log B_{kj} or log A_{kj} to alpha
      */
     virtual std::pair<double, double> getLGrad(const int i, const int j,
-                                               const double alpha) const = 0;
+                                               const double alpha) const {
+        return std::pair<double, double>(0, 0);
+    }
 
     void check() const {
         for (int i = 0; i <= conf_->mx_tc; i++) {
