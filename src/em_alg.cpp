@@ -106,12 +106,10 @@ bool EM::exec() {
                 }
         }
         if (!suc_alpha) return false;
-        if (MStepTheta()) return true;
 
-        // if (iter % 5 == 0)
-        // printf("%.4e / %.4e\n", getLikelihood(), getLikelihoodTruth());
-        // printf("%.4e\n", getLikelihood());
+        if (MStepTheta()) return true;
     }
+
     return false;
 }
 
