@@ -81,11 +81,9 @@ bool EM::MStepAlpha() {
         d2 += z * grad.second;
     }
     alpha_ -= d1 / d2;
+
     // printf("%2d a: %2.2e d1: %+.2e d2: %+.2e\n", iter, alpha_, d1, d2);
-    if (alpha_ < 0 || d2 > 0) {
-        alpha_ = 0.0001;
-        return true;
-    }
+    if (alpha_ < 0 || d2 > 0) return false;
     return std::abs(d1 / d2) < conf_->eps_alpha;
 }
 
