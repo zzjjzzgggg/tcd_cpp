@@ -18,7 +18,7 @@ DEFINE_string(theta, "", "theta groundtruth file name");
 DEFINE_string(output, "", "output file name");
 
 DEFINE_int32(mx_tc, 2047, "maximum triadic cardinality");
-DEFINE_int32(mx_i, 128, "maximum triadic cardinality");
+DEFINE_int32(mx_i, 256, "maximum triadic cardinality");
 DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
 DEFINE_int32(mx_iter_alpha, 20, "maximum iterations for estimating alpha");
 DEFINE_int32(trials, 10, "trials per core");
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 #elif S_SGS
     SGSSampler sampler(&confs);
 #else
-    printf("Warning: Sampler is not specified! Use ISSampler by default!\n");
+    printf("Warning: Sampler is not specified! Use ITS by default!\n");
     ITSSampler sampler(&confs);
 #endif
 

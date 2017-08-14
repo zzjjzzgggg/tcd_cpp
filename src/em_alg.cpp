@@ -74,6 +74,7 @@ bool EM::MStepTheta() {
  */
 bool EM::MStepAlpha() {
     double d1 = -alpha_, d2 = -1;
+    // double d1 = 0, d2 = 0;
     for (const auto & [ k, j, z ] : non_zero_z_) {
         auto grad = sampler_->getLGrad(k, j, alpha_);
         d1 += z * grad.first;

@@ -132,7 +132,7 @@ public:
     virtual bool hasAlpha() const { return true; }
 
     /**
-     * first and second order derivations of log b_{ji}(alpha) to alpha
+     * first and second order derivations of log B_{kj} or log A_{kj} to alpha
      */
     virtual std::pair<double, double> getLGrad(const int i, const int j,
                                                const double alpha) const = 0;
