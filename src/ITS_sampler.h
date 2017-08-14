@@ -42,12 +42,11 @@ public:
                                        const double alpha) const override {
         if (j == 0 && k < 0) return std::make_pair(0.0, 0.0);
         double d1 = 0, d2 = 0, C = 0;
-        for (int i = std::max(j, int(std::pow(2, k))); i < (2 << k); i++) {
+        for (int i = std::max(j, int(std::pow(2, k))); i < 2 << k; i++) {
+            double c = cji(j, i, alpha);
 #ifndef N_UN
-            double c = bji(j, i, alpha);
             auto[d1_log, d2_log] = dLogBji(i, j, alpha);
 #else
-            double c = bji(j, i, alpha) / (1 - bji(0, i, alpha));
             auto[d1_log, d2_log] = dLogAji(i, j, alpha);
 #endif
             d1 += d1_log * c;
@@ -92,7 +91,7 @@ public:
             d1_b0_sum += e3 - e2;
             d2_b0_sum += -e3 * e3 + e2 * e2;
         }
-        double b0 = bji(0, i, alpha), d1_b0 = b0 * d1_b0_sum;
+        double b0 = cji(0, i, alpha), d1_b0 = b0 * d1_b0_sum;
         double d1 = d1_log_b + d1_b0 / (1 - b0);
         double d2_b0 = d1_b0 * d1_b0_sum + b0 * d2_b0_sum;
         double d2 = d2_log_b + d2_b0 / (1 - b0) + std::pow(d1_b0 / (1 - b0), 2);

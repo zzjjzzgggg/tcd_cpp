@@ -6,20 +6,23 @@
 #include "em_alg.h"
 
 void EM::init() {
+    // get g
     g_vec_ = sampler_->sample();
+
+    // initialize z
     for (const auto& pr : g_vec_) z_[pr.first].resize(K_ + 2);
 
-#ifndef N_UN
-    int start = 0;
-#else
-    int start = 1;
-#endif
     // initialize theta
     theta_.resize(K_ + 2);
-    randutils::initUniform(theta_, start);
+#ifndef N_UN
+    randutils::initUniform(theta_);
+#else
+    randutils::initUniform(theta_, 1);
+#endif
+
     // initialize alpha
     randutils::default_rng rng;
-    alpha_ = 0.01 * (rng.uniform() + 1);
+    alpha_ = 0.001 * (rng.uniform() + 1);
 }
 
 /**
@@ -107,7 +110,8 @@ bool EM::exec() {
         if (MStepTheta()) return true;
 
         // if (iter % 5 == 0)
-        //     printf("%.4e / %.4e\n", getLikelihood(), getLikelihoodTruth());
+        // printf("%.4e / %.4e\n", getLikelihood(), getLikelihoodTruth());
+        // printf("%.4e\n", getLikelihood());
     }
     return false;
 }

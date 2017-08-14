@@ -35,7 +35,9 @@ protected:
     vector<std::pair<int, int>> edges_;
 
 protected:
-    // state triads histogram in a sampled graph G
+    /**
+     * state triads histogram in a sampled graph G
+     */
     template <class Container = vector<int>>
     vector<std::pair<int, int>> statTrids(
         const UGraph& G, const Container& nodes = Container()) const {
@@ -52,13 +54,16 @@ protected:
             addition_zero_tc_nodes = nodes_.size() - nodes.size();
         }
         tc_to_num_nodes[0] += addition_zero_tc_nodes;
+
 #ifdef N_UN
         tc_to_num_nodes.erase(0);
 #endif
+
         std::vector<std::pair<int, int>> triads_hist;
         for (auto&& it : tc_to_num_nodes)
             triads_hist.emplace_back(it.first, it.second);
         std::sort(triads_hist.begin(), triads_hist.end());
+
         return triads_hist;
     }
 
@@ -76,14 +81,14 @@ public:
             printf("loading edges ...\n");
             ioutils::loadPrVec(conf_->graph_fnm, edges_);
             randutils::default_rng rng;
-            // rng.shuffle(edges_);
+            rng.shuffle(edges_);
             unordered_set<int> nodes;
-            for (auto&& pr : edges_) {
-                nodes.insert(pr.first);
-                nodes.insert(pr.second);
+            for (const auto & [ src, dst ] : edges_) {
+                nodes.insert(src);
+                nodes.insert(dst);
             }
             nodes_.reserve(nodes.size());
-            for (auto nd : nodes) nodes_.push_back(nd);
+            nodes_.insert(nodes_.end(), nodes.begin(), nodes.end());
             printf("N: %lu, E: %lu\n", nodes_.size(), edges_.size());
         }
         // default triangle sampling probability
@@ -91,19 +96,16 @@ public:
     }
 
     /**
-     * B_k(j) = sum_{i=2^k}{2^{k+1}-1} b_ji/2^k
+     * c_{ji} represents b_{ji} or a_{ji}
+     *
+     *     B_k(j) = sum_{i=2^k}{2^{k+1}-1} b_ji/2^k
+     *     A_k(j) = sum_{i=2^k}{2^{k+1}-1} a_ji/2^k
      */
     double pjk(const int j, const int k, const double alpha) const {
         if (j == 0 && k < 0) return 1;
         double sum = 0;
-        for (int i = std::max(j, int(std::pow(2, k))); i < std::pow(2, k + 1);
-             i++) {
-#ifndef N_UN
-            sum += bji(j, i, alpha);
-#else
-            sum += bji(j, i, alpha) / (1 - bji(0, i, alpha));
-#endif
-        }
+        for (int i = std::max(j, int(std::pow(2, k))); i < 2 << k; i++)
+            sum += cji(j, i, alpha);
         return sum / std::pow(2, k);
     }
 
@@ -112,8 +114,19 @@ public:
     virtual vector<std::pair<int, int>> sample() const = 0;
 
     /**
-     * P(Y=j|X=i)
+     * b_{ji} or a_{ji}, where
+     *     b_{ji} = P(Y=j|X=i),
+     *     a_{ji} = P(Y=j|X=i, Y>0)
      */
+    double cji(const int j, const int i, const double alpha) const {
+        if (i < j) return 0;
+#ifndef N_UN
+        return bji(j, i, alpha);
+#else
+        return bji(j, i, alpha) / (1 - bji(0, i, alpha));
+#endif
+    }
+
     virtual double bji(const int j, const int i, const double alpha) const = 0;
 
     virtual bool hasAlpha() const { return true; }
@@ -127,10 +140,11 @@ public:
     void check() const {
         for (int i = 0; i <= conf_->mx_tc; i++) {
             double sum_col = 0;
-            for (int j = 0; j <= i; j++) sum_col += bji(j, i, 0.1);
+            for (int j = 0; j <= i; j++) sum_col += cji(j, i, 0.1);
             assert(std::abs(sum_col - 1) < 1e-9);
         }
     }
-};
+
+}; /* class Sampler */
 
 #endif /* __GRAPH_SAMPLER_H__ */

@@ -17,10 +17,10 @@ DEFINE_string(graph, "", "graph full path");
 DEFINE_string(theta, "", "theta groundtruth file name");
 DEFINE_string(output, "", "output file name");
 
-DEFINE_int32(mx_tc, 2000, "maximum triadic cardinality");
+DEFINE_int32(mx_tc, 2047, "maximum triadic cardinality");
 DEFINE_int32(mx_i, 128, "maximum triadic cardinality");
 DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
-DEFINE_int32(mx_iter_alpha, 10, "maximum iterations for estimating alpha");
+DEFINE_int32(mx_iter_alpha, 20, "maximum iterations for estimating alpha");
 DEFINE_int32(trials, 10, "trials per core");
 DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 
@@ -29,7 +29,8 @@ DEFINE_double(p_edge, 0.1, "edge sampling rate");
 DEFINE_double(eps_theta, 1e-3, "threshold of estimating theta");
 DEFINE_double(eps_alpha, 1e-6, "threshold of estimating alpha");
 
-std::mutex print_mutex;
+std::mutex print_mutex, avg_est_mutex;
+
 void echo(const int n_suc, vector<int>& states) {
     std::lock_guard<std::mutex> guard(print_mutex);
     for (int core = 0; core < FLAGS_cores; core++)
@@ -38,7 +39,6 @@ void echo(const int n_suc, vector<int>& states) {
     std::fflush(stdout);
 }
 
-std::mutex avg_est_mutex;
 int main(int argc, char* argv[]) {
     gflags::SetUsageMessage("usage:");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -123,9 +123,9 @@ int main(int argc, char* argv[]) {
         printf("alpha = %.3e\n", alpha);
 
         for (size_t l = 0; l < truth.size(); l++) {
-            auto[k, theta] = truth[l];
+            auto[k, real] = truth[l];
             est_err_v.emplace_back(k, theta_hat[l] / n_suc,
-                                   std::sqrt(err[l] / n_suc) / theta);
+                                   std::sqrt(err[l] / n_suc) / real);
         }
         ioutils::saveTupleVec(
             est_err_v, strutils::subFilename(FLAGS_graph, FLAGS_output), true,
