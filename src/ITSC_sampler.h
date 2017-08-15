@@ -23,7 +23,7 @@ public:
     }
 
     vector<std::pair<int, int>> sample() const override {
-        randutils::default_rng rng;
+        rngutils::default_rng rng;
         int N = int(1 / conf_->p_edge);
         unordered_map<int, int> node_color(nodes_.size());
         for (int node : nodes_) node_color[node] = rng.uniform(0, N - 1);

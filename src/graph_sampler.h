@@ -80,7 +80,7 @@ public:
         if (!conf_->graph_fnm.empty()) {
             printf("loading edges ...\n");
             ioutils::loadPrVec(conf_->graph_fnm, edges_);
-            randutils::default_rng rng;
+            rngutils::default_rng rng;
             rng.shuffle(edges_);
             unordered_set<int> nodes;
             for (const auto & [ src, dst ] : edges_) {

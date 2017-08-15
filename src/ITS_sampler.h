@@ -27,7 +27,7 @@ public:
 
     vector<std::pair<int, int>> sample() const override {
         UGraph G(GraphType::MULTI);
-        randutils::default_rng rng;
+        rngutils::default_rng rng;
         for (const auto & [ src, dst ] : edges_)
             if (rng.uniform() < conf_->p_edge) G.addEdge(src, dst);
         G.defrag();

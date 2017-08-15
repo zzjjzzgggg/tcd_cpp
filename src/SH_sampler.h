@@ -38,7 +38,7 @@ public:
     void info() const override { printf("SH: p_tri = %.3f\n", p_tri_); }
 
     vector<std::pair<int, int>> sample() const override {
-        randutils::default_rng rng;
+        rngutils::default_rng rng;
         unordered_set<int> candidates, held_nodes, held_nbrs;
 
         for (int node : nodes_)

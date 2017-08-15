@@ -20,7 +20,7 @@ DEFINE_string(output, "", "output file name");
 DEFINE_int32(mx_tc, 2047, "maximum triadic cardinality");
 DEFINE_int32(mx_i, 256, "maximum triadic cardinality");
 DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
-DEFINE_int32(mx_iter_alpha, 30, "maximum iterations for estimating alpha");
+DEFINE_int32(mx_iter_alpha, 20, "maximum iterations for estimating alpha");
 DEFINE_int32(trials, 10, "trials per core");
 DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 

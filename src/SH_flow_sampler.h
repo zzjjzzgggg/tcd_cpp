@@ -17,7 +17,7 @@ public:
     void info() const override { printf("SH flow\n"); }
 
     vector<std::pair<int, int>> sample() const override {
-        randutils::default_rng rng;
+        rngutils::default_rng rng;
 
         std::unordered_map<int, int> flow_size, size_freq;
         ioutils::TSVParser ss(conf_->others);

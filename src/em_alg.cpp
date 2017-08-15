@@ -15,13 +15,13 @@ void EM::init() {
     // initialize theta
     theta_.resize(K_ + 2);
 #ifndef N_UN
-    randutils::initUniform(theta_);
+    rngutils::initUniform(theta_);
 #else
-    randutils::initUniform(theta_, 1);
+    rngutils::initUniform(theta_, 1);
 #endif
 
     // initialize alpha
-    randutils::default_rng rng;
+    rngutils::default_rng rng;
     alpha_ = 0.001 * (rng.uniform() + 1);
 }
 
@@ -90,10 +90,10 @@ bool EM::MStepAlpha() {
 bool EM::exec() {
     // The algorithm is not sensitive to alpha. So let EM converge to an
     // approximate theta first.
-    // for (int iters = 0; iters < conf_->mx_iter_theta; iters++) {
-    //     EStep();
-    //     if (MStepTheta()) break;
-    // }
+    for (int iters = 0; iters < conf_->mx_iter_theta; iters++) {
+        EStep();
+        if (MStepTheta()) break;
+    }
     // Now, we adjust alpha.
     for (int iter = 0; iter < conf_->mx_iter_theta; iter++) {
         EStep();

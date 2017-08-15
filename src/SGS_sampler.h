@@ -30,7 +30,7 @@ public:
     }
 
     vector<std::pair<int, int>> sample() const override {
-        randutils::default_rng rng;
+        rngutils::default_rng rng;
         std::vector<int> samples;  // TC -> # nodes
         for (auto node : nodes_)
             if (rng.uniform() < conf_->p_node) samples.push_back(node);

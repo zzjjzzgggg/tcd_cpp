@@ -19,10 +19,11 @@
 
 #include <os/osutils.h>
 #include <io/ioutils.h>
-#include <adv/randutils.h>
+#include <adv/rngutils.h>
 #include <graph/graph.h>
 #include <math/mathutils.h>
 
+// If require snap, snap has to be included at the last moment
 // #include <snap/Snap.h>
 
 using std::vector;

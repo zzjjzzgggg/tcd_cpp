@@ -51,7 +51,7 @@ unordered_map<int, int> countNewTriadsIfAddEdge(const int u, const int v,
 void truncateByEdge() {
     auto edges = ioutils::loadPrVec<int, int>(FLAGS_graph);
     if (FLAGS_shuffle) {
-        randutils::default_rng rng;
+        rngutils::default_rng rng;
         rng.shuffle(edges);
     }
 
