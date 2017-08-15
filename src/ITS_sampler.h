@@ -15,14 +15,8 @@
  */
 class ITSSampler : public Sampler {
 public:
-    ITSSampler(const Sampler::Config* conf) : Sampler(conf) {}
-
-    void info() const override {
-#ifndef N_UN
-        printf("ITS: graph size is known\n");
-#else
-        printf("ITS: graph size is unknown\n");
-#endif
+    ITSSampler(const Sampler::Config* conf) : Sampler(conf) {
+        printf("ITS sampler is ready\n");
     }
 
     vector<std::pair<int, int>> sample() const override {

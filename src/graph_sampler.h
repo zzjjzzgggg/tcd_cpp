@@ -93,6 +93,12 @@ public:
         }
         // default triangle sampling probability
         p_tri_ = std::pow(conf_->p_edge, 3);
+
+#ifndef N_UN
+        printf("graph size is known\n");
+#else
+        printf("graph size is unknown\n");
+#endif
     }
 
     /**
@@ -108,8 +114,6 @@ public:
             sum += cji(j, i, alpha);
         return sum / std::pow(2, k);
     }
-
-    virtual void info() const = 0;
 
     virtual vector<std::pair<int, int>> sample() const = 0;
 

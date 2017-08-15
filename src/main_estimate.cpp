@@ -62,9 +62,6 @@ int main(int argc, char* argv[]) {
     ITSSampler sampler(&confs);
 #endif
 
-    // sampler.check();
-    sampler.info();
-
     EM::Config conf;
     conf.mx_tc = FLAGS_mx_tc;
     conf.mx_i = FLAGS_mx_i;

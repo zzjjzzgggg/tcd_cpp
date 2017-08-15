@@ -19,14 +19,7 @@ private:
 public:
     SGSSampler(const Sampler::Config* conf) : Sampler(conf) {
         G_ = loadEdgeList<UGraph>(conf_->graph_fnm, GraphType::MULTI);
-    }
-
-    void info() const override {
-#ifndef N_UN
-        printf("SGS: graph size is known\n");
-#else
-        printf("SGS: graph size is unknown\n");
-#endif
+        printf("SGS sampler is ready\n");
     }
 
     vector<std::pair<int, int>> sample() const override {
