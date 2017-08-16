@@ -12,12 +12,10 @@
 /**
  * The general EM algorithm for estimating TCD.
  *
- * 1. when graph size is known
- *
+ * 1. when graph size is known:
  *    The sampler should provide vector g with g[0] calibrated.
  *
- * 2. when graph size is unknown
- *
+ * 2. when graph size is unknown:
  *    The sampler should provide vector g with g[0] removed.
  *
  */
@@ -90,6 +88,7 @@ public:
      * the first element is hat_alpha, remainings are hat_theta
      */
     vector<double> get();
-};
+
+}; /* EM */
 
 #endif /* __EMALG_H__ */

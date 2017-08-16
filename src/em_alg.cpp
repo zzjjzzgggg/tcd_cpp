@@ -70,15 +70,15 @@ bool EM::MStepTheta() {
 }
 
 /**
- * with L1 regularizer: max Q(alpha) - 1/2 alpha^2
+ * Find alpha maximizing Q with L1 regularizer: max Q(alpha) - 1/2 alpha^2
  */
 bool EM::MStepAlpha() {
     double d1 = -alpha_, d2 = -1;
     // double d1 = 0, d2 = 0;
     for (const auto & [ k, j, z ] : non_zero_z_) {
-        auto grad = sampler_->getLGrad(k, j, alpha_);
-        d1 += z * grad.first;
-        d2 += z * grad.second;
+        auto[grad1, grad2] = sampler_->getLGrad(k, j, alpha_);
+        d1 += z * grad1;
+        d2 += z * grad2;
     }
     alpha_ -= d1 / d2;
 
@@ -90,7 +90,7 @@ bool EM::MStepAlpha() {
 bool EM::exec() {
     // The algorithm is not sensitive to alpha. So let EM converge to an
     // approximate theta first.
-    for (int iters = 0; iters < conf_->mx_iter_theta; iters++) {
+    for (int iter = 0; iter < conf_->mx_iter_theta; iter++) {
         EStep();
         if (MStepTheta()) break;
     }
@@ -138,7 +138,7 @@ vector<double> EM::get() {
     scale();
 #endif
     vector<double> rst;
-    rst.reserve(theta_.size() + 1);
+    rst.reserve(theta_.size() + 1);  // alpha + theta
     rst.push_back(alpha_);
     rst.insert(rst.end(), theta_.begin(), theta_.end());
     return rst;

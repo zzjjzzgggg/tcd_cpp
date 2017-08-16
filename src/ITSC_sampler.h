@@ -17,7 +17,7 @@ public:
 
     vector<std::pair<int, int>> sample() const override {
         rngutils::default_rng rng;
-        int N = int(1 / conf_->p_edge);
+        int N = int(1.0 / conf_->p_edge);
         unordered_map<int, int> node_color(nodes_.size());
         for (int node : nodes_) node_color[node] = rng.uniform(0, N - 1);
 
@@ -25,6 +25,7 @@ public:
         for (const auto & [ src, dst ] : edges_)
             if (node_color[src] == node_color[dst]) G.addEdge(src, dst);
         G.defrag();
+
         return statTrids(G);
     }
 };

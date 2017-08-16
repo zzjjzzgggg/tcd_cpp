@@ -14,13 +14,14 @@
 #include <gflags/gflags.h>
 
 DEFINE_string(graph, "", "graph full path");
-DEFINE_string(theta, "", "theta groundtruth file name");
 DEFINE_string(output, "", "output file name");
+DEFINE_string(theta, "", "theta groundtruth file name");
 
+DEFINE_int32(mx_i, 128, "maximum triadic cardinality");
 DEFINE_int32(mx_tc, 2047, "maximum triadic cardinality");
-DEFINE_int32(mx_i, 256, "maximum triadic cardinality");
-DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
 DEFINE_int32(mx_iter_alpha, 20, "maximum iterations for estimating alpha");
+DEFINE_int32(mx_iter_theta, 1000, "maximum iterations for estimating theta");
+
 DEFINE_int32(trials, 10, "trials per core");
 DEFINE_int32(cores, std::thread::hardware_concurrency(), "cores");
 
@@ -45,10 +46,10 @@ int main(int argc, char* argv[]) {
     osutils::Timer tm;
 
     Sampler::Config confs;
-    confs.graph_fnm = FLAGS_graph;
     confs.mx_tc = FLAGS_mx_tc;
     confs.p_edge = FLAGS_p_edge;
     confs.p_node = FLAGS_p_node;
+    confs.graph_fnm = FLAGS_graph;
     confs.echo();
 
 #ifdef S_ITS
@@ -63,12 +64,12 @@ int main(int argc, char* argv[]) {
 #endif
 
     EM::Config conf;
-    conf.mx_tc = FLAGS_mx_tc;
     conf.mx_i = FLAGS_mx_i;
-    conf.mx_iter_theta = FLAGS_mx_iter_theta;
-    conf.mx_iter_alpha = FLAGS_mx_iter_alpha;
+    conf.mx_tc = FLAGS_mx_tc;
     conf.eps_theta = FLAGS_eps_theta;
     conf.eps_alpha = FLAGS_eps_alpha;
+    conf.mx_iter_theta = FLAGS_mx_iter_theta;
+    conf.mx_iter_alpha = FLAGS_mx_iter_alpha;
     conf.echo();
 
     printf("trials per processor: %d\n\n", FLAGS_trials);
