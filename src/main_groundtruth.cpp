@@ -17,7 +17,8 @@ int main(int argc, char* argv[]) {
     osutils::Timer tm;
     unordered_map<int, int> tc_to_num_nodes;
 
-    UGraph G = loadEdgeList<UGraph>(FLAGS_graph, GraphType::MULTI);
+    auto G = graph::loadEdgeList<graph::undir::UGraph>(FLAGS_graph,
+                                                       graph::GraphType::MULTI);
     printf("N: %d, E: %d\n", G.getNodes(), G.getEdges());
     if (FLAGS_un)
         printf("unknown graph size\n");
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]) {
     }
 
     vector<std::tuple<int, double, int>> dist;
-    for (const auto & [ k, n ] : tc_to_num_nodes)
+    for (const auto& [k, n] : tc_to_num_nodes)
         dist.emplace_back(k, n / double(n_plus), n);
     // if unknown graph size, store n_+ at head
     if (FLAGS_un) dist.emplace_back(-10, n_plus, 0);
@@ -44,7 +45,7 @@ int main(int argc, char* argv[]) {
 
     ioutils::saveTupleVec(dist,
                           strutils::subFilename(FLAGS_graph, FLAGS_output),
-                          true, "{}\t{:.6e}\t{}\n");
+                          "{}\t{:.6e}\t{}\n");
 
     printf("cost time %s\n", tm.getStr().c_str());
     gflags::ShutDownCommandLineFlags();

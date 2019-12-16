@@ -58,6 +58,9 @@ add_executable(calcrlb_sgs main_crlb.cpp)
 target_link_libraries(calcrlb_sgs ${LIBRARIES})
 target_compile_definitions(calcrlb_sgs PRIVATE S_SGS=1)
 
+add_executable(speedup main_speedup.cpp)
+target_link_libraries(speedup ${LIBRARIES})
+
 # test
 add_executable(test-me main_test.cpp)
 target_link_libraries(test-me ${LIBRARIES})

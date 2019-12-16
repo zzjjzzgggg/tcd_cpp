@@ -26,10 +26,9 @@
 // If require snap, snap has to be included at the last moment
 // #include <snap/Snap.h>
 
-using std::vector;
 using std::string;
 using std::unordered_map;
 using std::unordered_set;
+using std::vector;
 
-using namespace graph;
 using namespace fmt::literals;

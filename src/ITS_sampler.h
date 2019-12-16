@@ -14,15 +14,15 @@
  * probability p^3.
  */
 class ITSSampler : public Sampler {
-public:
+   public:
     ITSSampler(const Sampler::Config* conf) : Sampler(conf) {
         printf("ITS sampler is ready\n");
     }
 
     vector<std::pair<int, int>> sample() const override {
-        UGraph G(GraphType::MULTI);
+        graph::undir::UGraph G(graph::GraphType::MULTI);
         rngutils::default_rng rng;
-        for (const auto & [ src, dst ] : edges_)
+        for (const auto& [src, dst] : edges_)
             if (rng.uniform() < conf_->p_edge) G.addEdge(src, dst);
         G.defrag();
         return statTrids(G);
@@ -39,9 +39,9 @@ public:
         for (int i = std::max(j, int(std::pow(2, k))); i < 2 << k; i++) {
             double c = cji(j, i, alpha);
 #ifndef N_UN
-            auto[d1l, d2l] = dLogBji(i, j, alpha);
+            auto [d1l, d2l] = dLogBji(i, j, alpha);
 #else
-            auto[d1l, d2l] = dLogAji(i, j, alpha);
+            auto [d1l, d2l] = dLogAji(i, j, alpha);
 #endif
             d1 += d1l * c;
             d2 += (d2l + d1l * d1l) * c;

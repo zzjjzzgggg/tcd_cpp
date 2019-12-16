@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10.0)
 project (TCD C CXX)
 
 include(CheckCXXCompilerFlag)
@@ -17,15 +17,15 @@ else()
   message(FATAL_ERROR "Please install a modern C++ compiler.")
 endif()
 
-# set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_CXX_COMPILER=/usr/bin/g++)
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_COMPILER=/usr/bin/g++-8)
 # set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-pthread")
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{GIT_REPO}/misc/cmake)
-message(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
+# message(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
 
 # required libraries from system
 find_package(Threads REQUIRED)

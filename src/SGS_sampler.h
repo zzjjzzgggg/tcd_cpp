@@ -14,11 +14,12 @@
  */
 class SGSSampler : public Sampler {
 private:
-    UGraph G_;
+    graph::undir::UGraph G_;
 
 public:
     SGSSampler(const Sampler::Config* conf) : Sampler(conf) {
-        G_ = loadEdgeList<UGraph>(conf_->graph_fnm, GraphType::MULTI);
+        G_ = graph::loadEdgeList<graph::undir::UGraph>(conf_->graph_fnm,
+                                                       graph::GraphType::MULTI);
         printf("SGS sampler is ready\n");
     }
 

@@ -113,7 +113,7 @@ public:
                 if (i == k)
                     H(i, i) = theta_(i) * (1 - theta_(i)) / phi_(i);
                 else
-                    H(i, k) = -theta_(i) * theta_(k) / phi_(i);
+                    H(i, k) = -theta_(i) * theta_(k) / phi_(k);
             }
         return H;
     }

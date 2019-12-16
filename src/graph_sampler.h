@@ -9,7 +9,7 @@
 #include "stdafx.h"
 
 class Sampler {
-public:
+   public:
     struct Config {
         int mx_tc;         // maximum triadic cardinality
         double p_edge;     // edge sampling rate
@@ -18,29 +18,29 @@ public:
         string others;     // reserved string
 
         void echo() const {
-            printf(
-                "Sampling config:\n"
-                "  graph: %s\n"
-                "  maximum TC: %d\n"
-                "  edge sample rate: %g\n"
-                "  node sample rate: %g\n\n",
-                graph_fnm.c_str(), mx_tc, p_edge, p_node);
+            printf("Sampling config:\n"
+                   "  graph: %s\n"
+                   "  maximum TC: %d\n"
+                   "  edge sample rate: %g\n"
+                   "  node sample rate: %g\n\n",
+                   graph_fnm.c_str(), mx_tc, p_edge, p_node);
         }
     };
 
-protected:
+   protected:
     const Config* conf_;
     double p_tri_;  // prob. of sampling a triangle
     vector<int> nodes_;
     vector<std::pair<int, int>> edges_;
 
-protected:
+   public:
     /**
      * state triads histogram in a sampled graph G
      */
     template <class Container = vector<int>>
     vector<std::pair<int, int>> statTrids(
-        const UGraph& G, const Container& nodes = Container()) const {
+        const graph::undir::UGraph& G,
+        const Container& nodes = Container()) const {
         std::unordered_map<int, int> tc_to_num_nodes;
 
         int addition_zero_tc_nodes;
@@ -75,7 +75,7 @@ protected:
                                      (1 - p_tri_) / alpha);
     }
 
-public:
+   public:
     Sampler(const Config* conf) : conf_(conf) {
         if (!conf_->graph_fnm.empty()) {
             printf("loading edges ...\n");
@@ -83,7 +83,7 @@ public:
             rngutils::default_rng rng;
             rng.shuffle(edges_);
             unordered_set<int> nodes;
-            for (const auto & [ src, dst ] : edges_) {
+            for (const auto& [src, dst] : edges_) {
                 nodes.insert(src);
                 nodes.insert(dst);
             }

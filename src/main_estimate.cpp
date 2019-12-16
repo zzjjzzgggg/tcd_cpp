@@ -121,12 +121,12 @@ int main(int argc, char* argv[]) {
         printf("alpha = %.3e\n", alpha);
 
         for (size_t l = 0; l < truth.size(); l++) {
-            auto[k, real] = truth[l];
+            auto [k, real] = truth[l];
             est_err_v.emplace_back(k, theta_hat[l] / n_suc,
                                    std::sqrt(err[l] / n_suc) / real);
         }
         ioutils::saveTupleVec(
-            est_err_v, strutils::subFilename(FLAGS_graph, FLAGS_output), true,
+            est_err_v, strutils::subFilename(FLAGS_graph, FLAGS_output),
             "{}\t{:.3e}\t{:.3e}\n",
             "# runs: {}\n# alpha: {:.3e}\n"_format(n_suc, alpha));
     }
