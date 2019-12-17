@@ -64,3 +64,11 @@ target_link_libraries(speedup ${LIBRARIES})
 # test
 add_executable(test-me main_test.cpp)
 target_link_libraries(test-me ${LIBRARIES})
+
+
+#################################################################################
+# baseline
+
+# minhash
+add_executable(minhash main_minhash.cpp)
+target_link_libraries(minhash ${LIBRARIES})
