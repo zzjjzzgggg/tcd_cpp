@@ -30,7 +30,7 @@ void EM::init() {
  */
 void EM::EStep() {
     non_zero_z_.clear();
-    for (const auto & [ j, g ] : g_vec_) {
+    for (const auto& [j, g] : g_vec_) {
         double norm = 0;
         for (int k = getK(j); k <= K_; k++) {
             z_[j][k + 1] = sampler_->pjk(j, k, alpha_) * theta_[k + 1];
@@ -75,8 +75,8 @@ bool EM::MStepTheta() {
 bool EM::MStepAlpha() {
     double d1 = -alpha_, d2 = -1;
     // double d1 = 0, d2 = 0;
-    for (const auto & [ k, j, z ] : non_zero_z_) {
-        auto[grad1, grad2] = sampler_->getLGrad(k, j, alpha_);
+    for (auto&& [k, j, z] : non_zero_z_) {
+        auto [grad1, grad2] = sampler_->getLGrad(k, j, alpha_);
         d1 += z * grad1;
         d2 += z * grad2;
     }
@@ -146,7 +146,7 @@ vector<double> EM::get() {
 
 double EM::getLikelihood() const {
     double likelihood = 0;
-    for (const auto & [ j, g ] : g_vec_) {
+    for (const auto& [j, g] : g_vec_) {
         double tmp = 0;
         for (int k = getK(j); k <= K_; k++)
             tmp += theta_[k + 1] * sampler_->pjk(j, k, alpha_);
@@ -159,7 +159,7 @@ double EM::getLikelihoodTruth() const {
     auto truth = ioutils::loadVec<double>(
         "/dat/workspace/tcd_journal/hepth/theta_W2K_binned.dat", 1);
     double likelihood = 0;
-    for (const auto & [ j, g ] : g_vec_) {
+    for (const auto& [j, g] : g_vec_) {
         double tmp = 0;
         for (int k = getK(j); k <= K_; k++)
             tmp += truth[k + 1] * sampler_->pjk(j, k, alpha_);

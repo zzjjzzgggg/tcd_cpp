@@ -72,3 +72,13 @@ target_link_libraries(test-me ${LIBRARIES})
 # minhash
 add_executable(minhash main_minhash.cpp)
 target_link_libraries(minhash ${LIBRARIES})
+
+
+add_executable(sgs_sampling main_sgs_sampling.cpp)
+target_link_libraries(sgs_sampling ${LIBRARIES})
+
+add_executable(its_sampling main_its_sampling.cpp)
+target_link_libraries(its_sampling ${LIBRARIES})
+
+add_executable(itsc_sampling main_itsc_sampling.cpp)
+target_link_libraries(itsc_sampling ${LIBRARIES})
